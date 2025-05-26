@@ -93,6 +93,22 @@ artists = {
     "column2": ["Artist4", "Artist5", "Artist6"],
     "column3": ["Artist7", "Artist8"]
 }
+genre = {
+    "column1": ["Genre 01", "Genre 02", "Genre 03", "Genre 04", "Genre 05"],
+    "column2": ["Genre 06", "Genre 07", "Genre 08", "Genre 09", "Genre 10"],
+    "column3": ["Genre 11", "Genre 12", "Genre 13", "Genre 14"]
+}
+character = {
+    "column1": ["Character 01", "Character 02", "Character 03", "Character 04", "Character 05", "Character 06"],
+    "column2": ["Character 07", "Character 08", "Character 09", "Character 10", "Character 11", "Character 12"],
+    "column3": ["Character 13", "Character 14", "Character 15", "Character 16", "Character 17", "Character 18"]
+}
+group = {
+    "column1": ["Group 01", "Group 02", "Group 03", "Group 04", "Group 05", "Group 06", "Group 07"],
+    "column2": ["Group 08", "Group 09", "Group 10", "Group 11", "Group 12", "Group 13", "Group 14"],
+    "column3": ["Group 15", "Group 16", "Group 17", "Group 18", "Group 19", "Group 20", "Group 21"]
+}
+
 
 # Globals
 image_refs = []
@@ -107,8 +123,10 @@ BG_COLOR = "#2E2E2E"
 BG_BUTTON_COLOR = "#1E1E1E"
 FG_COLOR = "#FFFFFF"
 ACTIVE_BG = "#444444"
-
-
+HIGHLIGHT_BG = ACTIVE_BG
+BUTTON_BG = BG_BUTTON_COLOR
+CARD_ARTIST_FONT = ("Arial", 12, "bold")
+CARD_ARTIST_COLOR = "#A1D0FB"
 
 # Functions for each menu point
 def home_action():
@@ -128,39 +146,339 @@ def list_action(dictionary = myDict):
 # Shows all Genre in three columns
 def genre_action():
     hide_all_dynamic_frames()
-    print("Genre clicked")
+
+    for widget in genre_container.winfo_children():
+        widget.destroy()
+
+    genre_container.pack(fill=tk.BOTH, expand=True)
+
+    # --- Scrollable Canvas Setup ---
+    canvas = tk.Canvas(genre_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(genre_container, orient="vertical", command=canvas.yview)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Create frame inside canvas
+    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
+    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
+
+    # Resize canvas content to always match canvas width for centering
+    def resize_canvas(event):
+        canvas.itemconfig(window_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    # --- Genre Inner Frame ---
+    genre_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
+    genre_inner.pack(pady=20)
+
+    # Use grid for three columns
+    columns = ["column1", "column2", "column3"]
+
+    for col_index, col_name in enumerate(columns):
+        col_frame = tk.Frame(genre_inner, bg=BG_COLOR)
+        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
+
+        for item in genre.get(col_name, []):
+            btn = tk.Button(
+                col_frame,
+                text=item,
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda name=item: genre_clicked(name),
+                cursor="hand2",
+                width=40
+            )
+            btn.pack(pady=5, anchor="w")
+
+    # --- Mousewheel + Keyboard Support ---
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_arrow_key(event):
+        if event.keysym == "Up":
+            canvas.yview_scroll(-1, "units")
+        elif event.keysym == "Down":
+            canvas.yview_scroll(1, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+
+    canvas.bind_all("<Up>", _on_arrow_key)
+    canvas.bind_all("<Down>", _on_arrow_key)
 
 # Shows all Characters in three columns
 def character_action():
     hide_all_dynamic_frames()
-    print("Character clicked")
+
+    for widget in character_container.winfo_children():
+        widget.destroy()
+
+    character_container.pack(fill=tk.BOTH, expand=True)
+
+    # --- Scrollable Canvas Setup ---
+    canvas = tk.Canvas(character_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(character_container, orient="vertical", command=canvas.yview)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Create frame inside canvas
+    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
+    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
+
+    # Resize canvas content to always match canvas width for centering
+    def resize_canvas(event):
+        canvas.itemconfig(window_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    # --- Character Inner Frame ---
+    character_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
+    character_inner.pack(pady=20)
+
+    # Use grid for three columns
+    columns = ["column1", "column2", "column3"]
+
+    for col_index, col_name in enumerate(columns):
+        col_frame = tk.Frame(character_inner, bg=BG_COLOR)
+        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
+
+        for item in character.get(col_name, []):
+            btn = tk.Button(
+                col_frame,
+                text=item,
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda name=item: character_clicked(name),
+                cursor="hand2",
+                width=40
+            )
+            btn.pack(pady=5, anchor="w")
+
+    # --- Mousewheel + Keyboard Support ---
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_arrow_key(event):
+        if event.keysym == "Up":
+            canvas.yview_scroll(-1, "units")
+        elif event.keysym == "Down":
+            canvas.yview_scroll(1, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+
+    canvas.bind_all("<Up>", _on_arrow_key)
+    canvas.bind_all("<Down>", _on_arrow_key)
 
 # Shows all Groups in three columns
 def group_action():
     hide_all_dynamic_frames()
-    print("Group clicked")
+
+    for widget in group_container.winfo_children():
+        widget.destroy()
+
+    group_container.pack(fill=tk.BOTH, expand=True)
+
+    # --- Scrollable Canvas Setup ---
+    canvas = tk.Canvas(group_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(group_container, orient="vertical", command=canvas.yview)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Create frame inside canvas
+    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
+    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
+
+    # Resize canvas content to always match canvas width for centering
+    def resize_canvas(event):
+        canvas.itemconfig(window_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    # --- Group Inner Frame ---
+    group_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
+    group_inner.pack(pady=20)
+
+    # Use grid for three columns
+    columns = ["column1", "column2", "column3"]
+
+    for col_index, col_name in enumerate(columns):
+        col_frame = tk.Frame(group_inner, bg=BG_COLOR)
+        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
+
+        for item in group.get(col_name, []):
+            btn = tk.Button(
+                col_frame,
+                text=item,
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda name=item: group_clicked(name),
+                cursor="hand2",
+                width=40
+            )
+            btn.pack(pady=5, anchor="w")
+
+    # --- Mousewheel + Keyboard Support ---
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_arrow_key(event):
+        if event.keysym == "Up":
+            canvas.yview_scroll(-1, "units")
+        elif event.keysym == "Down":
+            canvas.yview_scroll(1, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+
+    canvas.bind_all("<Up>", _on_arrow_key)
+    canvas.bind_all("<Down>", _on_arrow_key)
 
 # Shows all Artists in three columns
 def artist_action():
     hide_all_dynamic_frames()
-    artist_container.pack(fill=tk.BOTH, expand=True, pady=20)
 
+    for widget in artist_container.winfo_children():
+        widget.destroy()
 
+    artist_container.pack(fill=tk.BOTH, expand=True)
+
+    # --- Scrollable Canvas Setup ---
+    canvas = tk.Canvas(artist_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(artist_container, orient="vertical", command=canvas.yview)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Create frame inside canvas
+    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
+    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
+
+    # Resize canvas content to always match canvas width for centering
+    def resize_canvas(event):
+        canvas.itemconfig(window_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    # --- Artist Inner Frame ---
+    artist_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
+    artist_inner.pack(pady=20)
+
+    # Use grid for three columns
+    columns = ["column1", "column2", "column3"]
+
+    for col_index, col_name in enumerate(columns):
+        col_frame = tk.Frame(artist_inner, bg=BG_COLOR)
+        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
+
+        for artist in artists.get(col_name, []):
+            btn = tk.Button(
+                col_frame,
+                text=artist,
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda name=artist: artist_clicked(name),
+                cursor="hand2",
+                width=40
+            )
+            btn.pack(pady=5, anchor="w")
+
+    # --- Mousewheel + Keyboard Support ---
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_arrow_key(event):
+        if event.keysym == "Up":
+            canvas.yview_scroll(-1, "units")
+        elif event.keysym == "Down":
+            canvas.yview_scroll(1, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+
+    canvas.bind_all("<Up>", _on_arrow_key)
+    canvas.bind_all("<Down>", _on_arrow_key)
+
+# Shows the Search View
 def search_action():
     hide_all_dynamic_frames()
     search_container.pack(pady=20)
-    print("Search clicked")
 
 def handle_search():
     query = search_entry.get()
     print("Search query:", query)
 
+# Shows a list of all works of the artist
 def artist_clicked(artist_name):
     print("Artist selected:", artist_name)
+
+# Shows a list of all works of the genre
+def genre_clicked(genre_name):
+    print("Genre selected:", genre_name)
+
+# Shows a list of all works with the character
+def character_clicked(character_name):
+    print("Character selected:", character_name)
+
+# Shows a list of all works of the group
+def group_clicked(group_name):
+    print("Group selected:", group_name)
+
 
 def hide_all_dynamic_frames():
     search_container.pack_forget()
     artist_container.pack_forget()
+    genre_container.pack_forget()
+    character_container.pack_forget()
+    group_container.pack_forget()
     list_container.pack_forget()
     detail_container.pack_forget()
     if image_container is not None:
@@ -199,13 +517,17 @@ def create_entry_card(data, row, col):
 
     artist_frame = tk.Frame(info_frame, bg=ACTIVE_BG)
     artist_frame.pack(anchor="w")
-    tk.Label(artist_frame, text="Artists: ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
+    #tk.Label(artist_frame, text="Artists: ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
     for i, artist in enumerate(data["artists"]):
-        artist_lbl = tk.Label(artist_frame, text=artist, fg="#00BFFF", bg=ACTIVE_BG, cursor="hand2")
+        artist_lbl = None
+        if i < len(data["artists"]) - 1:
+            artist_lbl = tk.Label(artist_frame, text=artist+",", fg=CARD_ARTIST_COLOR, 
+                                  font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
+        else:
+            artist_lbl = tk.Label(artist_frame, text=artist, fg=CARD_ARTIST_COLOR, 
+                                  font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
         artist_lbl.pack(side=tk.LEFT)
         artist_lbl.bind("<Button-1>", lambda e, name=artist: artist_clicked(name))
-        if i < len(data["artists"]) - 1:
-            tk.Label(artist_frame, text=", ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
 
     genre_lbl = tk.Label(info_frame, text="Genre: " + ", ".join(data["genre"]),
                          fg=FG_COLOR, bg=ACTIVE_BG, anchor="w")
@@ -227,7 +549,7 @@ def on_entry_click(data):
     scroll_frame = tk.Frame(canvas, bg=BG_COLOR)
 
     scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    frame_id =canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+    frame_id = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
 
     canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -475,33 +797,22 @@ search_container.pack_forget()
 # === Artist Grid ===
 
 artist_container = tk.Frame(root, bg=BG_COLOR)
-
-# Inner frame to hold columns and center them
-artist_inner = tk.Frame(artist_container, bg=BG_COLOR)
-artist_inner.pack(side=tk.TOP, pady=20)
-
-# Create 3 columns
-for i, column in enumerate(["column1", "column2", "column3"]):
-    col_frame = tk.Frame(artist_inner, bg=BG_COLOR)
-    col_frame.grid(row=0, column=i, padx=20, sticky="n")
-
-    for artist in artists[column]:
-        btn = tk.Button(
-            col_frame,
-            text=artist,
-            command=lambda name=artist: artist_clicked(name),
-            bg="#1E1E1E",
-            fg=FG_COLOR,
-            activebackground=ACTIVE_BG,
-            activeforeground=FG_COLOR,
-            font=("Arial", 12),
-            relief=tk.FLAT,
-            width=40,
-            pady=5
-        )
-        btn.pack(pady=5)
-
 artist_container.pack_forget()
+
+# === Genre Grid ===
+
+genre_container = tk.Frame(root, bg=BG_COLOR)
+genre_container.pack_forget()
+
+# === Character Grid ===
+
+character_container = tk.Frame(root, bg=BG_COLOR)
+character_container.pack_forget()
+
+# === Group Grid ===
+
+group_container = tk.Frame(root, bg=BG_COLOR)
+group_container.pack_forget()
 
 # === Container for List View ===
 list_container = tk.Frame(root, bg=BG_COLOR)
