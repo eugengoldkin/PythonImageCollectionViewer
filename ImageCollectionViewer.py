@@ -42,6 +42,16 @@ def process_directories(start_dir):
                 # Count the number of images
                 size = len(image_files)
                 
+                # Make sure the fields are filled
+                if not data.get('characters'):
+                    data['characters'] = ["No Characters"]
+                if not data.get('artists'):
+                    data['artists'] = ["No Artists"]
+                if not data.get('genre'):
+                    data['genre'] = ["No Genre"]
+                if not data.get('group'):
+                    data['group'] = ["No Group"]
+
                 # Update the dictionary with the list of image files and the count
                 data['size'] = size
                 data['files'] = image_files
@@ -83,8 +93,28 @@ def get_sorted_genres(data):
         genres.update(item["genre"])  # Add genres from each dictionary
     return sorted(genres)  # Return a sorted list of unique genres
 
+def split_sorted_list_to_dict(input_list):
+    # Step 1: Sort the list alphabetically
+    sorted_list = sorted(input_list)
+
+    # Step 2: Compute size of each group
+    n = len(sorted_list)
+    group_size = n // 3
+    remainder = n % 3
+
+    # Step 3: Split into 3 groups, distributing the remainder
+    groups = {}
+    start = 0
+    for i in range(3):
+        end = start + group_size + (1 if i < remainder else 0)
+        groups[f"column{i+1}"] = sorted_list[start:end]
+        start = end
+        
+    return groups
+
+
 # Start processing from the current directory
-myDict = process_directories(current_directory)
+myDict = sort_by_date_and_title(process_directories(current_directory))
 
 #print(myDict)
 
@@ -127,6 +157,18 @@ HIGHLIGHT_BG = ACTIVE_BG
 BUTTON_BG = BG_BUTTON_COLOR
 CARD_ARTIST_FONT = ("Arial", 12, "bold")
 CARD_ARTIST_COLOR = "#A1D0FB"
+CARD_SIZE_FONT = ("Arial", 10, "bold")
+CARD_SIZE_COLOR = "#FFFFFF"
+CARD_SIZE_BG_COLOR = "#6B6B6B"
+CARD_GENRE_FONT = ("Arial", 8)
+CARD_GENRE_COLOR = "#FFFFFF"
+CARD_GENRE_BG_COLOR = "#3B79C5"
+CARD_GROUP_FONT = ("Arial", 8)
+CARD_GROUP_COLOR = "#FFFFFF"
+CARD_GROUP_BG_COLOR = BG_COLOR
+CARD_CHARACTER_FONT = ("Arial", 8)
+CARD_CHARACTER_COLOR = "#FFFFFF"
+CARD_CHARACTER_BG_COLOR = BG_COLOR
 
 # Functions for each menu point
 def home_action():
@@ -483,7 +525,8 @@ def hide_all_dynamic_frames():
     detail_container.pack_forget()
     if image_container is not None:
         image_container.pack_forget()
-    
+
+# Create an entry card for the main view   
 def create_entry_card(data, row, col):
     box = tk.Frame(list_container, bg=ACTIVE_BG, bd=1, relief=tk.RIDGE, padx=10, pady=10, width=1500, height=235)
     box.grid(row=row, column=col, padx=10, pady=10, sticky="nw")
@@ -519,19 +562,71 @@ def create_entry_card(data, row, col):
     artist_frame.pack(anchor="w")
     #tk.Label(artist_frame, text="Artists: ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
     for i, artist in enumerate(data["artists"]):
-        artist_lbl = None
+        artist_text = artist
         if i < len(data["artists"]) - 1:
-            artist_lbl = tk.Label(artist_frame, text=artist+",", fg=CARD_ARTIST_COLOR, 
-                                  font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
-        else:
-            artist_lbl = tk.Label(artist_frame, text=artist, fg=CARD_ARTIST_COLOR, 
-                                  font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
+            artist_text += ","
+        artist_lbl = tk.Label(artist_frame, text=artist_text, fg=CARD_ARTIST_COLOR, 
+                              font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
         artist_lbl.pack(side=tk.LEFT)
         artist_lbl.bind("<Button-1>", lambda e, name=artist: artist_clicked(name))
 
-    genre_lbl = tk.Label(info_frame, text="Genre: " + ", ".join(data["genre"]),
-                         fg=FG_COLOR, bg=ACTIVE_BG, anchor="w")
-    genre_lbl.pack(anchor="w")
+    size_lbl = tk.Label(info_frame, text="Size: " + str(data["size"]), fg=CARD_SIZE_COLOR, 
+                        bg=CARD_SIZE_BG_COLOR, font=CARD_SIZE_FONT, anchor="w")
+    size_lbl.pack(anchor="w")
+
+    group_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    group_frame1.pack(anchor="w")
+    tk.Label(group_frame1, text="Group: ", fg=CARD_GROUP_COLOR, bg=ACTIVE_BG, font=CARD_GROUP_FONT).pack(side=tk.LEFT)
+    for i, group in enumerate(data["group"]):
+        group_text = group
+        if i < len(data["group"]) - 1:
+            group_text += ","
+        group_lbl = tk.Label(group_frame1, text=group_text, fg=CARD_GROUP_COLOR,
+                             font=CARD_GROUP_FONT, bg=CARD_GROUP_BG_COLOR, cursor="hand2")
+        group_lbl.pack(side=tk.LEFT)
+        group_lbl.bind("<Button-1>", lambda e, name=group: group_clicked(name))
+
+    character_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    character_frame1.pack(anchor="w")
+    tk.Label(character_frame1, text="Characters: ", fg=CARD_CHARACTER_COLOR, bg=ACTIVE_BG, font=CARD_CHARACTER_FONT).pack(side=tk.LEFT)
+    for i, character in enumerate(data["characters"]):
+        character_text = character
+        if i < len(data["characters"]) - 1:
+            character_text += ","
+        character_lbl = tk.Label(character_frame1, text=character_text, fg=CARD_CHARACTER_COLOR,
+                             font=CARD_CHARACTER_FONT, bg=CARD_CHARACTER_BG_COLOR, cursor="hand2")
+        character_lbl.pack(side=tk.LEFT)
+        character_lbl.bind("<Button-1>", lambda e, name=character: character_clicked(name))
+
+    genre_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    genre_frame1.pack(anchor="w")
+    tk.Label(genre_frame1, text="Genre: ", fg=CARD_GENRE_COLOR, bg=ACTIVE_BG, font=CARD_GENRE_FONT).pack(side=tk.LEFT)
+    for i, genre in enumerate(data["genre"]):
+        if 2*i < len(data["genre"]):
+            genre_text = genre
+            if i < len(data["genre"]) - 1:
+                genre_text += ","
+            genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=CARD_GENRE_COLOR, 
+                                font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+            genre_lbl.pack(side=tk.LEFT)
+            genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
+
+    genre_frame2 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    genre_frame2.pack(anchor="w")
+    for i, genre in enumerate(data["genre"]):
+        if 2*i >= len(data["genre"]):
+            genre_text = genre
+            if i < len(data["genre"]) - 1:
+                genre_text += ","
+            genre_lbl = tk.Label(genre_frame2, text=genre_text, fg=CARD_GENRE_COLOR, 
+                                font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+            genre_lbl.pack(side=tk.LEFT)
+            genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
+
+
+
+    #genre_lbl = tk.Label(info_frame, text="Genre: " + ", ".join(data["genre"]), fg=FG_COLOR, bg=ACTIVE_BG, anchor="w")
+    #genre_lbl.pack(anchor="w")
 
 def on_entry_click(data):
     hide_all_dynamic_frames()
