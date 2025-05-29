@@ -69,15 +69,23 @@ def process_directories(start_dir):
 
 # Function to sort by date and title
 def sort_by_date_and_title(data):
-    return sorted(data, key=lambda x: (datetime.strptime(x["date"], "%d.%m.%Y"), x["title"]))
+    return sorted(data, key=lambda x: (-datetime.strptime(x["date"], "%d.%m.%Y").timestamp(), x["title"]))
 
 # Filter by artists
 def filter_by_artists(data, artists):
     return [item for item in data if any(artist in item['artists'] for artist in artists)]
 
+# Filter by groups
+def filter_by_group(data, groups):
+    return [item for item in data if any(group in item['group'] for group in groups)]
+
 # Filter by genre
 def filter_by_genre(data, genres):
     return [item for item in data if any(genre in item['genre'] for genre in genres)]
+
+# Filter by character
+def filter_by_character(data, characters):
+    return [item for item in data if any(character in item['characters'] for character in characters)]
 
 # Function to create a sorted list of unique artists
 def get_sorted_artists(data):
@@ -86,12 +94,26 @@ def get_sorted_artists(data):
         artists.update(item["artists"])  # Add artists from each dictionary
     return sorted(artists)  # Return a sorted list of unique artists
 
+# Function to create a sorted list of unique groups
+def get_sorted_groups(data):
+    groups = set()  # Use a set to remove duplicates
+    for item in data:
+        groups.update(item["group"])  # Add groups from each dictionary
+    return sorted(groups)  # Return a sorted list of unique artists
+
 # Function to create a sorted list of unique genres
 def get_sorted_genres(data):
     genres = set()  # Use a set to remove duplicates
     for item in data:
         genres.update(item["genre"])  # Add genres from each dictionary
     return sorted(genres)  # Return a sorted list of unique genres
+
+# Function to create a sorted list of unique characters
+def get_sorted_characters(data):
+    characters = set()  # Use a set to remove duplicates
+    for item in data:
+        characters.update(item["characters"])  # Add characters from each dictionary
+    return sorted(characters)  # Return a sorted list of unique characters
 
 def split_sorted_list_to_dict(input_list):
     # Step 1: Sort the list alphabetically
@@ -170,23 +192,150 @@ CARD_CHARACTER_FONT = ("Arial", 8)
 CARD_CHARACTER_COLOR = "#FFFFFF"
 CARD_CHARACTER_BG_COLOR = BG_COLOR
 
-# Functions for each menu point
+# ===================================
+#    Functions for each menu point
+# ===================================
+
+# Shows all collections in a grid
 def home_action():
+    """
+    Shows an overview of all the picture collections in a grid with up to 30 elements.
+    The function **list_action()** is called with it'S default values.
+
+    Returns:
+        None: This function only generates a view.
+    """
     list_action()
 
-def list_action(dictionary = myDict):
+# Shows collections in a grid
+def list_action(dictionary = myDict, iteration_start = 0):
+    """
+    Shows an overview of the picture collections in a grid with up to 30 elements 
+    beginning with iteration_start element of the dictionary list.
+
+    Parameters:
+        dictionary (list(dict)): A list of dictionaries containing meta data about picture collections. Defaults to myDict which contains a list of all picture collections.
+        iteration_start (int): The starting index for iteration and therefor the index of the first element to be shown. Defaults to 0, which is the first element of myDict.
+
+    Returns:
+        None: This function only generates a view.
+    """
     hide_all_dynamic_frames()
     list_container.pack(fill=tk.BOTH, expand=True, pady=20)
     for widget in list_container.winfo_children():
         widget.destroy()
     
-    for index, item in enumerate(dictionary):
-        row = index // cards_per_row
-        col = index % cards_per_row
-        create_entry_card(item, row, col)
+    # --- Scrollable Canvas Setup ---
+    canvas = tk.Canvas(list_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(list_container, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
+    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
+
+    def resize_canvas(event):
+        canvas.itemconfig(window_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    # --- Card Container ---
+    card_container = tk.Frame(scrollable_frame, bg=BG_COLOR)
+    card_container.pack(pady=20)
+
+    iter_start = iteration_start if iteration_start < len(dictionary) else max(iteration_start-30, 0)
+    iter_end = min(iter_start+30, len(dictionary))
+    max_columns = 3
+    row = 0
+    col = 0
+    for index, entry in enumerate(dictionary[iter_start:iter_end], start=iter_start):
+        row = index // max_columns
+        col = index % max_columns
+
+        frame = tk.Frame(card_container, bg=ACTIVE_BG, padx=10, pady=10, width=550, height=235)
+        frame.grid(row=row, column=col, padx=7, pady=7)
+        # Prevent the frame from resizing to fit contents
+        frame.grid_propagate(False)
+        frame.pack_propagate(False)
+
+        create_entry_card(entry, frame)
+
+    # shows the previous 30 elements
+    frame_left = tk.Frame(card_container, bg=ACTIVE_BG, padx=5, pady=5)
+    frame_left.grid(row=row+1, column=0, padx=7, pady=10)
+    button_left = tk.Button(
+                frame_left,
+                text= "Previous",
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda: list_action(dictionary, max(iter_start - 30, 0)),
+                cursor="hand2",
+                width=40
+            )
+    button_left.pack(anchor="w")
+    
+    # shows which elements are currenty visible in the grid
+    frame_middle = tk.Frame(card_container, bg=ACTIVE_BG, padx=5, pady=5)
+    frame_middle.grid(row=row+1, column=1, padx=7, pady=10)
+    tk.Label(frame_middle, text=str(iter_start+1) + " - " + str(iter_end), fg=CARD_GROUP_COLOR, 
+             bg=ACTIVE_BG, font=("Arial", 14)).pack(side=tk.LEFT)
+
+    # shows the next 30 elements
+    frame_right = tk.Frame(card_container, bg=ACTIVE_BG, padx=5, pady=5)
+    frame_right.grid(row=row+1, column=2, padx=7, pady=10)
+    button_right = tk.Button(
+                frame_right,
+                text= "Next",
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda: list_action(dictionary, iter_start + 30),
+                cursor="hand2",
+                width=40
+            )
+    button_right.pack(anchor="e")
+
+    # --- Scroll & Keyboard Navigation ---
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_arrow_key(event):
+        if event.keysym == "Up":
+            canvas.yview_scroll(-3, "units")
+        elif event.keysym == "Down":
+            canvas.yview_scroll(3, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
+    canvas.bind_all("<Up>", _on_arrow_key)
+    canvas.bind_all("<Down>", _on_arrow_key)
 
 # Shows all Genre in three columns
 def genre_action():
+    """
+    Shows all Genre in three columns. It uses the gloabal variable **genre**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the genre each. 
+    Clicking on one of the buttons will call the function **genre_clicked(name)** which in turn should 
+    show all entities of the specified genre.
+
+    Returns:
+        None: This function only generates a view.
+    """
     hide_all_dynamic_frames()
 
     for widget in genre_container.winfo_children():
@@ -263,6 +412,15 @@ def genre_action():
 
 # Shows all Characters in three columns
 def character_action():
+    """
+    Shows all characters in three columns. It uses the gloabal variable **character**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the characters each. 
+    Clicking on one of the buttons will call the function **character_clicked(name)** which in turn should 
+    show all entities with the specified character.
+
+    Returns:
+        None: This function only generates a view.
+    """
     hide_all_dynamic_frames()
 
     for widget in character_container.winfo_children():
@@ -339,6 +497,15 @@ def character_action():
 
 # Shows all Groups in three columns
 def group_action():
+    """
+    Shows all group in three columns. It uses the gloabal variable **group**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the groups each. 
+    Clicking on one of the buttons will call the function **group_clicked(name)** which in turn should 
+    show all entities of the specified group.
+
+    Returns:
+        None: This function only generates a view.
+    """
     hide_all_dynamic_frames()
 
     for widget in group_container.winfo_children():
@@ -415,6 +582,15 @@ def group_action():
 
 # Shows all Artists in three columns
 def artist_action():
+    """
+    Shows all artists in three columns. It uses the gloabal variable **artists**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the artists each. 
+    Clicking on one of the buttons will call the function **artist_clicked(name)** which in turn should 
+    show all entities of the specified artist.
+
+    Returns:
+        None: This function only generates a view.
+    """
     hide_all_dynamic_frames()
 
     for widget in artist_container.winfo_children():
@@ -489,33 +665,78 @@ def artist_action():
     canvas.bind_all("<Up>", _on_arrow_key)
     canvas.bind_all("<Down>", _on_arrow_key)
 
-# Shows the Search View
+# Shows the Search View TODO: Improve the view with more options
 def search_action():
     hide_all_dynamic_frames()
     search_container.pack(pady=20)
 
+# =======================================
+#    Filtered Views of the collections
+# =======================================
+
+# Does a search   TODO: Implement
 def handle_search():
     query = search_entry.get()
     print("Search query:", query)
 
 # Shows a list of all works of the artist
 def artist_clicked(artist_name):
-    print("Artist selected:", artist_name)
+    """
+    Shows a list of all works of the artist in a grid with up to 30 elements.
+    The list **myDict** is filtered for **artist_name** and then the function 
+    **list_action(dict)** is called with the filtered list as input.
+
+    Parameters:
+        artist_name (str): The name of the artist whos work the list has to be filtered for.
+   
+    Returns:
+        None: This function only generates a view.
+    """
+    list_action(filter_by_artists(myDict, [artist_name]))
 
 # Shows a list of all works of the genre
 def genre_clicked(genre_name):
-    print("Genre selected:", genre_name)
+    """
+    Shows a list of all works of the genre in a grid with up to 30 elements.
+    The list **myDict** is filtered for **genre_name** and then the function 
+    **list_action(dict)** is called with the filtered list as input.
 
-# Shows a list of all works with the character
+    Parameters:
+        genre_name (str): The name of the genre to which the picture collections have to be filtered for.
+   
+    Returns:
+        None: This function only generates a view.
+    """
+    list_action(filter_by_genre(myDict, [genre_name]))
+
+# Shows a list of all works with the character  TODO: Implement
 def character_clicked(character_name):
-    print("Character selected:", character_name)
+    """
+    Shows a list of all works with the character in a grid with up to 30 elements.
+    The list **myDict** is filtered for **character_name** and then the function 
+    **list_action(dict)** is called with the filtered list as input.
 
-# Shows a list of all works of the group
+    Parameters:
+        character_name (str): The name of the character for which the picture collections have to be filtered for.
+   
+    Returns:
+        None: This function only generates a view.
+    """
+    list_action(filter_by_character(myDict, [character_name]))
+
+# Shows a list of all works of the group  TODO: Implement
 def group_clicked(group_name):
     print("Group selected:", group_name)
 
+# =======================================
+#      Help functions for main views
+# =======================================
 
+# Hides all dynamic frames to prevent frame overlaping
 def hide_all_dynamic_frames():
+    """
+    Hides all dynamic frames to prevent frame overlaping.
+    """
     search_container.pack_forget()
     artist_container.pack_forget()
     genre_container.pack_forget()
@@ -527,10 +748,10 @@ def hide_all_dynamic_frames():
         image_container.pack_forget()
 
 # Create an entry card for the main view   
-def create_entry_card(data, row, col):
-    box = tk.Frame(list_container, bg=ACTIVE_BG, bd=1, relief=tk.RIDGE, padx=10, pady=10, width=1500, height=235)
-    box.grid(row=row, column=col, padx=10, pady=10, sticky="nw")
-    box.pack_propagate(False)  # fix size to width & height of contents
+def create_entry_card(data, parent):
+    #box = tk.Frame(list_container, bg=ACTIVE_BG, bd=1, relief=tk.RIDGE, padx=10, pady=10, width=1500, height=235)
+    #box.grid(row=row, column=col, padx=10, pady=10, sticky="nw")
+    #box.pack_propagate(False)  # fix size to width & height of contents
 
     # Load image
     img_path = os.path.join(data["folder"], data["files"][0])
@@ -540,18 +761,18 @@ def create_entry_card(data, row, col):
         photo = ImageTk.PhotoImage(img)
         image_refs.append(photo)
 
-        img_label = tk.Label(box, image=photo, bg=ACTIVE_BG, cursor="hand2")
+        img_label = tk.Label(parent, image=photo, bg=ACTIVE_BG, cursor="hand2")
         img_label.pack(side=tk.LEFT)
         img_label.bind("<Button-1>", lambda e: on_entry_click(data))
     except Exception as e:
         print(f"Image load error for {img_path}: {e}")
-        placeholder = tk.Label(box, text="No Image", width=14, height=6, bg="#444", fg="white", cursor="hand2")
+        placeholder = tk.Label(parent, text="No Image", width=14, height=6, bg="#444", fg="white", cursor="hand2")
         placeholder.pack(side=tk.LEFT)
         placeholder.bind("<Button-1>", lambda e: on_entry_click(data))
 
     # Text content
-    info_frame = tk.Frame(box, bg=ACTIVE_BG)
-    info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=20)
+    info_frame = tk.Frame(parent, bg=ACTIVE_BG)
+    info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
 
     title_lbl = tk.Label(info_frame, text=data["title"], font=("Arial", 14, "bold"),
                          fg=FG_COLOR, bg=ACTIVE_BG, anchor="w", cursor="hand2")
@@ -624,9 +845,6 @@ def create_entry_card(data, row, col):
             genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
 
-
-    #genre_lbl = tk.Label(info_frame, text="Genre: " + ", ".join(data["genre"]), fg=FG_COLOR, bg=ACTIVE_BG, anchor="w")
-    #genre_lbl.pack(anchor="w")
 
 def on_entry_click(data):
     hide_all_dynamic_frames()
@@ -838,7 +1056,7 @@ def return_to_entry_view():
 # Create main window
 root = tk.Tk()
 root.title("Dark Mode GUI")
-root.geometry("1600x800")
+root.geometry("1800x900")
 root.configure(bg=BG_COLOR)
 
 # Create top menu bar as a frame
@@ -905,7 +1123,6 @@ character_container = tk.Frame(root, bg=BG_COLOR)
 character_container.pack_forget()
 
 # === Group Grid ===
-
 group_container = tk.Frame(root, bg=BG_COLOR)
 group_container.pack_forget()
 
