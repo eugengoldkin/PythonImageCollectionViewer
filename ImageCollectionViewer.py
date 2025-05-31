@@ -6,7 +6,8 @@ import tkinter as tk
 from tkinter import Menu
 from PIL import Image, ImageTk
 import os
-
+import platform
+import subprocess
 
 # Get the current directory of the script
 current_directory = Path(__file__).parent
@@ -709,7 +710,7 @@ def genre_clicked(genre_name):
     """
     list_action(filter_by_genre(myDict, [genre_name]))
 
-# Shows a list of all works with the character  TODO: Implement
+# Shows a list of all works with the character
 def character_clicked(character_name):
     """
     Shows a list of all works with the character in a grid with up to 30 elements.
@@ -724,9 +725,20 @@ def character_clicked(character_name):
     """
     list_action(filter_by_character(myDict, [character_name]))
 
-# Shows a list of all works of the group  TODO: Implement
+# Shows a list of all works of the group
 def group_clicked(group_name):
-    print("Group selected:", group_name)
+    """
+    Shows a list of all works with the group in a grid with up to 30 elements.
+    The list **myDict** is filtered for **group_name** and then the function 
+    **list_action(dict)** is called with the filtered list as input.
+
+    Parameters:
+        group_name (str): The name of the group for which the picture collections have to be filtered for.
+   
+    Returns:
+        None: This function only generates a view.
+    """
+    list_action(filter_by_group(myDict, [group_name]))
 
 # =======================================
 #      Help functions for main views
@@ -749,9 +761,16 @@ def hide_all_dynamic_frames():
 
 # Create an entry card for the main view   
 def create_entry_card(data, parent):
-    #box = tk.Frame(list_container, bg=ACTIVE_BG, bd=1, relief=tk.RIDGE, padx=10, pady=10, width=1500, height=235)
-    #box.grid(row=row, column=col, padx=10, pady=10, sticky="nw")
-    #box.pack_propagate(False)  # fix size to width & height of contents
+    """
+    Generate a card containing all the data of the corresponding entry.
+
+    Parameters:
+        data (dict): A dictionary containing picture paths, artists, groups, genres, etc
+        parent (tk.Frame): The frame of the gui where the entry card will be put into 
+
+    Returns:
+        None: This function only generates a card.
+    """
 
     # Load image
     img_path = os.path.join(data["folder"], data["files"][0])
@@ -822,20 +841,19 @@ def create_entry_card(data, parent):
     genre_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     genre_frame1.pack(anchor="w")
     tk.Label(genre_frame1, text="Genre: ", fg=CARD_GENRE_COLOR, bg=ACTIVE_BG, font=CARD_GENRE_FONT).pack(side=tk.LEFT)
-    for i, genre in enumerate(data["genre"]):
-        if 2*i < len(data["genre"]):
-            genre_text = genre
-            if i < len(data["genre"]) - 1:
-                genre_text += ","
-            genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=CARD_GENRE_COLOR, 
-                                font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
-            genre_lbl.pack(side=tk.LEFT)
-            genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
+    for i, genre in enumerate(data["genre"][0:min(6, len(data["genre"]))], start=0):
+        genre_text = genre
+        if i < len(data["genre"]) - 1:
+            genre_text += ","
+        genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=CARD_GENRE_COLOR, 
+                             font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+        genre_lbl.pack(side=tk.LEFT)
+        genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
-    genre_frame2 = tk.Frame(info_frame, bg=ACTIVE_BG)
-    genre_frame2.pack(anchor="w")
-    for i, genre in enumerate(data["genre"]):
-        if 2*i >= len(data["genre"]):
+    if len(data["genre"]) > 6:
+        genre_frame2 = tk.Frame(info_frame, bg=ACTIVE_BG)
+        genre_frame2.pack(anchor="w")      
+        for i, genre in enumerate(data["genre"][6:min(13, len(data["genre"]))], start=6):
             genre_text = genre
             if i < len(data["genre"]) - 1:
                 genre_text += ","
@@ -844,6 +862,17 @@ def create_entry_card(data, parent):
             genre_lbl.pack(side=tk.LEFT)
             genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
+    if len(data["genre"]) > 13:
+        genre_frame3 = tk.Frame(info_frame, bg=ACTIVE_BG)
+        genre_frame3.pack(anchor="w")      
+        for i, genre in enumerate(data["genre"][13:len(data["genre"])], start=13):
+            genre_text = genre
+            if i < len(data["genre"]) - 1:
+                genre_text += ","
+            genre_lbl = tk.Label(genre_frame3, text=genre_text, fg=CARD_GENRE_COLOR, 
+                                font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+            genre_lbl.pack(side=tk.LEFT)
+            genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
 
 def on_entry_click(data):
@@ -867,7 +896,7 @@ def on_entry_click(data):
 
     canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
+    
     # This makes sure that everything is centered
     def on_canvas_resize(event):
         x = (detail_container.winfo_width() - scroll_frame.winfo_width()) / 2
@@ -883,7 +912,7 @@ def on_entry_click(data):
     canvas.bind_all("<MouseWheel>", _on_mousewheel)  # For Windows/macOS
     canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # For Linux
     canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
-
+    
     # Main box
     main_box = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=20, pady=20)
     main_box.pack(pady=10, padx=20, fill=tk.X)
@@ -911,21 +940,76 @@ def on_entry_click(data):
     tk.Label(info_frame, text=data["title"], font=("Arial", 16, "bold"),
              fg=FG_COLOR, bg=ACTIVE_BG).pack(anchor="w", pady=2)
 
+
     artist_frame = tk.Frame(info_frame, bg=ACTIVE_BG)
     artist_frame.pack(anchor="w")
-    tk.Label(artist_frame, text="Artists: ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
+    #tk.Label(artist_frame, text="Artists: ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
     for i, artist in enumerate(data["artists"]):
-        artist_lbl = tk.Label(artist_frame, text=artist, fg="#00BFFF", bg=ACTIVE_BG, cursor="hand2")
+        artist_text = artist
+        if i < len(data["artists"]) - 1:
+            artist_text += ","
+        artist_lbl = tk.Label(artist_frame, text=artist_text, fg=CARD_ARTIST_COLOR, 
+                              font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
         artist_lbl.pack(side=tk.LEFT)
         artist_lbl.bind("<Button-1>", lambda e, name=artist: artist_clicked(name))
-        if i < len(data["artists"]) - 1:
-            tk.Label(artist_frame, text=", ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
 
-    tk.Label(info_frame, text="Genre: " + ", ".join(data["genre"]),
-             fg=FG_COLOR, bg=ACTIVE_BG).pack(anchor="w", pady=2)
+    size_lbl = tk.Label(info_frame, text="Size: " + str(data["size"]), fg=CARD_SIZE_COLOR, 
+                        bg=CARD_SIZE_BG_COLOR, font=CARD_SIZE_FONT, anchor="w")
+    size_lbl.pack(anchor="w")
 
-    tk.Label(info_frame, text="Folder: " + data["folder"],
-             fg=FG_COLOR, bg=ACTIVE_BG).pack(anchor="w", pady=2)
+    group_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    group_frame1.pack(anchor="w")
+    tk.Label(group_frame1, text="Group: ", fg=CARD_GROUP_COLOR, bg=ACTIVE_BG, font=CARD_GROUP_FONT).pack(side=tk.LEFT)
+    for i, group in enumerate(data["group"]):
+        group_text = group
+        if i < len(data["group"]) - 1:
+            group_text += ","
+        group_lbl = tk.Label(group_frame1, text=group_text, fg=CARD_GROUP_COLOR,
+                             font=CARD_GROUP_FONT, bg=CARD_GROUP_BG_COLOR, cursor="hand2")
+        group_lbl.pack(side=tk.LEFT)
+        group_lbl.bind("<Button-1>", lambda e, name=group: group_clicked(name))
+
+    character_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    character_frame1.pack(anchor="w")
+    tk.Label(character_frame1, text="Characters: ", fg=CARD_CHARACTER_COLOR, bg=ACTIVE_BG, font=CARD_CHARACTER_FONT).pack(side=tk.LEFT)
+    for i, character in enumerate(data["characters"]):
+        character_text = character
+        if i < len(data["characters"]) - 1:
+            character_text += ","
+        character_lbl = tk.Label(character_frame1, text=character_text, fg=CARD_CHARACTER_COLOR,
+                             font=CARD_CHARACTER_FONT, bg=CARD_CHARACTER_BG_COLOR, cursor="hand2")
+        character_lbl.pack(side=tk.LEFT)
+        character_lbl.bind("<Button-1>", lambda e, name=character: character_clicked(name))
+
+    two_line_split = 10
+    genre_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    genre_frame1.pack(anchor="w")
+    tk.Label(genre_frame1, text="Genre: ", fg=CARD_GENRE_COLOR, bg=ACTIVE_BG, font=CARD_GENRE_FONT).pack(side=tk.LEFT)
+    for i, genre in enumerate(data["genre"][0:min(two_line_split, len(data["genre"]))], start=0):
+        genre_text = genre
+        if i < len(data["genre"]) - 1:
+            genre_text += ","
+        genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=CARD_GENRE_COLOR, 
+                             font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+        genre_lbl.pack(side=tk.LEFT)
+        genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
+
+    if len(data["genre"]) > two_line_split:
+        genre_frame2 = tk.Frame(info_frame, bg=ACTIVE_BG)
+        genre_frame2.pack(anchor="w")      
+        for i, genre in enumerate(data["genre"][two_line_split:len(data["genre"])], start=two_line_split):
+            genre_text = genre
+            if i < len(data["genre"]) - 1:
+                genre_text += ","
+            genre_lbl = tk.Label(genre_frame2, text=genre_text, fg=CARD_GENRE_COLOR, 
+                                font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+            genre_lbl.pack(side=tk.LEFT)
+            genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
+
+
+    folder_lbl = tk.Label(info_frame, text="Folder: " + data["folder"], fg=FG_COLOR, bg=ACTIVE_BG)
+    folder_lbl.pack(anchor="w", pady=2)
+    folder_lbl.bind("<Button-1>", lambda e, name=data["folder"]: on_folder_clicked(name))
 
     # Mini thumbnails
     thumbs_frame = tk.Frame(scroll_frame, bg=BG_COLOR)
@@ -945,6 +1029,25 @@ def on_entry_click(data):
             lbl.bind("<Button-1>", lambda e, f=file: on_image_click(f))
         except Exception as e:
             print(f"Thumb load error for {file}: {e}")
+
+# Open folder of folder_path 
+def on_folder_clicked(folder_path):
+    """
+    Opens the folder where the pictures of the folder_path corresponding entry are stored.
+
+    Parameters:
+        folder_path (str): A String containing the path of the folder to be opened
+
+    Returns:
+        None: This function only opens the folder where the pictures are stored.    
+    """
+    print(f"Opening folder: {folder_path}")
+    if platform.system() == 'Windows':
+        os.startfile(os.path.normpath(folder_path))
+    elif platform.system() == 'Darwin':  # macOS
+        subprocess.call(['open', folder_path])
+    else:  # Linux
+        subprocess.call(['xdg-open', folder_path])
 
 def on_image_click(filename):
     global current_image_index, current_image_data
