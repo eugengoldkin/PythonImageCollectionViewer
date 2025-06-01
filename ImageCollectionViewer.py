@@ -193,6 +193,16 @@ CARD_CHARACTER_FONT = ("Arial", 8)
 CARD_CHARACTER_COLOR = "#FFFFFF"
 CARD_CHARACTER_BG_COLOR = BG_COLOR
 
+ENTRY_ARTIST_FONT = ("Arial", 15, "bold")
+ENTRY_ARTIST_COLOR = "#A1D0FB"
+ENTRY_ARTIST_BG_COLOR = "#444444"
+ENTRY_SIZE_FONT = ("Arial", 13, "bold")
+ENTRY_SIZE_COLOR = "#FFFFFF"
+ENTRY_SIZE_BG_COLOR = "#6B6B6B"
+ENTRY_FONT = ("Arial", 11)
+ENTRY_COLOR = "#FFFFFF"
+ENTRY_BG_COLOR = "#494F6C"
+
 # ===================================
 #    Functions for each menu point
 # ===================================
@@ -874,8 +884,22 @@ def create_entry_card(data, parent):
             genre_lbl.pack(side=tk.LEFT)
             genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
+# =======================================
+#      Detailed view of an entry
+# =======================================
 
-def on_entry_click(data):
+# Generates the detail view for the corresponding entry
+def on_entry_click(data, starting_thumbnail=0):
+    """
+    Generates the detail view for the corresponding entry.
+
+    Parameters:
+        data (dict): A dictionary containing picture paths, artists, groups, genres, etc
+        starting_thumbnail (int): The starting iterator for the thumbnails 
+
+    Returns:
+        None: This function only generates a view.
+    """
     hide_all_dynamic_frames()
     global current_image_data
     current_image_data = data
@@ -898,7 +922,7 @@ def on_entry_click(data):
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
     
     # This makes sure that everything is centered
-    def on_canvas_resize(event):
+    def on_canvas_resize(event=None):
         x = (detail_container.winfo_width() - scroll_frame.winfo_width()) / 2
         canvas.coords(frame_id, (x, 0))
         bbox = (0, 0, detail_container.winfo_width(), scroll_frame.winfo_height())
@@ -914,8 +938,10 @@ def on_entry_click(data):
     canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
     
     # Main box
-    main_box = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=20, pady=20)
-    main_box.pack(pady=10, padx=20, fill=tk.X)
+    main_box = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=20, pady=20, width=1000, height=320)
+    main_box.pack(pady=10, padx=10, fill=tk.X)
+    main_box.grid_propagate(False)
+    main_box.pack_propagate(False)
 
     # Left: Main image
     img_path = os.path.join(data["folder"], data["files"][0])
@@ -937,60 +963,58 @@ def on_entry_click(data):
     info_frame = tk.Frame(main_box, bg=ACTIVE_BG)
     info_frame.pack(side=tk.LEFT, padx=20, anchor="n")
 
-    tk.Label(info_frame, text=data["title"], font=("Arial", 16, "bold"),
+    tk.Label(info_frame, text=data["title"], font=("Arial", 18, "bold"),
              fg=FG_COLOR, bg=ACTIVE_BG).pack(anchor="w", pady=2)
-
 
     artist_frame = tk.Frame(info_frame, bg=ACTIVE_BG)
     artist_frame.pack(anchor="w")
-    #tk.Label(artist_frame, text="Artists: ", fg=FG_COLOR, bg=ACTIVE_BG).pack(side=tk.LEFT)
     for i, artist in enumerate(data["artists"]):
         artist_text = artist
         if i < len(data["artists"]) - 1:
             artist_text += ","
-        artist_lbl = tk.Label(artist_frame, text=artist_text, fg=CARD_ARTIST_COLOR, 
-                              font=CARD_ARTIST_FONT, bg=ACTIVE_BG, cursor="hand2")
+        artist_lbl = tk.Label(artist_frame, text=artist_text, fg=ENTRY_ARTIST_COLOR, 
+                              font=ENTRY_ARTIST_FONT, bg=ENTRY_ARTIST_BG_COLOR, cursor="hand2")
         artist_lbl.pack(side=tk.LEFT)
         artist_lbl.bind("<Button-1>", lambda e, name=artist: artist_clicked(name))
 
-    size_lbl = tk.Label(info_frame, text="Size: " + str(data["size"]), fg=CARD_SIZE_COLOR, 
-                        bg=CARD_SIZE_BG_COLOR, font=CARD_SIZE_FONT, anchor="w")
+    size_lbl = tk.Label(info_frame, text="Size: " + str(data["size"]), fg=ENTRY_SIZE_COLOR, 
+                        bg=ENTRY_SIZE_BG_COLOR, font=ENTRY_SIZE_FONT, anchor="w")
     size_lbl.pack(anchor="w")
 
     group_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     group_frame1.pack(anchor="w")
-    tk.Label(group_frame1, text="Group: ", fg=CARD_GROUP_COLOR, bg=ACTIVE_BG, font=CARD_GROUP_FONT).pack(side=tk.LEFT)
+    tk.Label(group_frame1, text="Group: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
     for i, group in enumerate(data["group"]):
         group_text = group
         if i < len(data["group"]) - 1:
             group_text += ","
-        group_lbl = tk.Label(group_frame1, text=group_text, fg=CARD_GROUP_COLOR,
-                             font=CARD_GROUP_FONT, bg=CARD_GROUP_BG_COLOR, cursor="hand2")
+        group_lbl = tk.Label(group_frame1, text=group_text, fg=ENTRY_COLOR,
+                             font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
         group_lbl.pack(side=tk.LEFT)
         group_lbl.bind("<Button-1>", lambda e, name=group: group_clicked(name))
 
     character_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     character_frame1.pack(anchor="w")
-    tk.Label(character_frame1, text="Characters: ", fg=CARD_CHARACTER_COLOR, bg=ACTIVE_BG, font=CARD_CHARACTER_FONT).pack(side=tk.LEFT)
+    tk.Label(character_frame1, text="Characters: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
     for i, character in enumerate(data["characters"]):
         character_text = character
         if i < len(data["characters"]) - 1:
             character_text += ","
-        character_lbl = tk.Label(character_frame1, text=character_text, fg=CARD_CHARACTER_COLOR,
-                             font=CARD_CHARACTER_FONT, bg=CARD_CHARACTER_BG_COLOR, cursor="hand2")
+        character_lbl = tk.Label(character_frame1, text=character_text, fg=ENTRY_COLOR,
+                             font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
         character_lbl.pack(side=tk.LEFT)
         character_lbl.bind("<Button-1>", lambda e, name=character: character_clicked(name))
 
     two_line_split = 10
     genre_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     genre_frame1.pack(anchor="w")
-    tk.Label(genre_frame1, text="Genre: ", fg=CARD_GENRE_COLOR, bg=ACTIVE_BG, font=CARD_GENRE_FONT).pack(side=tk.LEFT)
+    tk.Label(genre_frame1, text="Genre: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
     for i, genre in enumerate(data["genre"][0:min(two_line_split, len(data["genre"]))], start=0):
         genre_text = genre
         if i < len(data["genre"]) - 1:
             genre_text += ","
-        genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=CARD_GENRE_COLOR, 
-                             font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+        genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=ENTRY_COLOR, 
+                             font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
         genre_lbl.pack(side=tk.LEFT)
         genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
@@ -1001,22 +1025,72 @@ def on_entry_click(data):
             genre_text = genre
             if i < len(data["genre"]) - 1:
                 genre_text += ","
-            genre_lbl = tk.Label(genre_frame2, text=genre_text, fg=CARD_GENRE_COLOR, 
-                                font=CARD_GENRE_FONT, bg=CARD_GENRE_BG_COLOR, cursor="hand2")
+            genre_lbl = tk.Label(genre_frame2, text=genre_text, fg=ENTRY_COLOR, 
+                                font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
             genre_lbl.pack(side=tk.LEFT)
             genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
 
-
-    folder_lbl = tk.Label(info_frame, text="Folder: " + data["folder"], fg=FG_COLOR, bg=ACTIVE_BG)
+    folder_lbl = tk.Label(info_frame, text="Folder: " + data["folder"], font=ENTRY_FONT, fg=FG_COLOR, bg=ACTIVE_BG, cursor="hand2")
     folder_lbl.pack(anchor="w", pady=2)
     folder_lbl.bind("<Button-1>", lambda e, name=data["folder"]: on_folder_clicked(name))
+
+    # --- Thumbnails ---
+
+    thumbnail_start = starting_thumbnail if starting_thumbnail < data["size"] else max(0, starting_thumbnail-32)
+    thumbnail_end = min(thumbnail_start+32, data["size"])
+
+    # Buttons for thumbnails
+
+    button_frame = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=7, pady=7, width=200, height=30)
+    button_frame.pack(pady=0, padx=10, fill=tk.X)
+
+    # shows the previous 32 elements
+    button_left = tk.Button(
+                button_frame,
+                text= "Previous",
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda: on_entry_click(data, max(thumbnail_start-32,0)),
+                cursor="hand2",
+                width=20
+            )
+    #button_left.grid(row=0,column=0)
+    button_left.pack(anchor="n", side=tk.LEFT)
+
+    # shows which elements are currenty visible in the grid
+    frame_middle = tk.Frame(button_frame, bg=ACTIVE_BG, padx=420, pady=0)
+    tk.Label(frame_middle, text=str(thumbnail_start+1) + " - " + str(thumbnail_end), fg=CARD_GROUP_COLOR, 
+             bg=BUTTON_BG, padx=10, pady=5, font=("Arial", 12)).pack()
+    frame_middle.pack(side=tk.LEFT)
+
+    # shows the next 32 elements
+    button_right = tk.Button(
+                button_frame,
+                text= "Next",
+                bg=BUTTON_BG,
+                fg=FG_COLOR,
+                activebackground=ACTIVE_BG,
+                activeforeground=FG_COLOR,
+                relief=tk.FLAT,
+                font=("Arial", 12),
+                command=lambda: on_entry_click(data, thumbnail_start+32),
+                cursor="hand2",
+                width=20
+            )
+    #button_right.grid(row=0,column=2)
+    button_right.pack(anchor="n", side=tk.RIGHT)
+
 
     # Mini thumbnails
     thumbs_frame = tk.Frame(scroll_frame, bg=BG_COLOR)
     thumbs_frame.pack(pady=20)
 
     thumbs_per_row = 8
-    for i, file in enumerate(data["files"]):
+    for i, file in enumerate(data["files"][thumbnail_start:thumbnail_end], start=thumbnail_start):
         try:
             thumb_path = os.path.join(data["folder"], file)
             img = Image.open(thumb_path)
@@ -1030,6 +1104,8 @@ def on_entry_click(data):
         except Exception as e:
             print(f"Thumb load error for {file}: {e}")
 
+    on_canvas_resize()
+
 # Open folder of folder_path 
 def on_folder_clicked(folder_path):
     """
@@ -1041,7 +1117,7 @@ def on_folder_clicked(folder_path):
     Returns:
         None: This function only opens the folder where the pictures are stored.    
     """
-    print(f"Opening folder: {folder_path}")
+    #print(f"Opening folder: {folder_path}")
     if platform.system() == 'Windows':
         os.startfile(os.path.normpath(folder_path))
     elif platform.system() == 'Darwin':  # macOS
@@ -1049,18 +1125,20 @@ def on_folder_clicked(folder_path):
     else:  # Linux
         subprocess.call(['xdg-open', folder_path])
 
+# =======================================
+#        Image view of an entry
+# =======================================
+
 def on_image_click(filename):
     global current_image_index, current_image_data
 
     if not current_image_data:
         return
-
     # Get current image index in the list
     if filename in current_image_data["files"]:
         current_image_index = current_image_data["files"].index(filename)
     else:
         return  # Filename not found
-
     show_fullscreen_image()
 
 def show_fullscreen_image():
@@ -1103,13 +1181,13 @@ def show_fullscreen_image():
 
     # Overlay it in top-right corner with some padding
     close_button.place(relx=1.0, x=-20, y=20, anchor="ne")
-
-    # --- Render the image ---
-    def render_image():
-        global current_fullscreen_photo
-        image_container.update_idletasks()
-        w = image_container.winfo_width()
-        h = image_container.winfo_height()
+ 
+    # --- Render the image --- 
+    def render_image(): 
+        global current_fullscreen_photo 
+        image_container.update_idletasks() 
+        w = image_container.winfo_width() 
+        h = image_container.winfo_height() 
         try:
             filename = current_image_data["files"][current_image_index]
             path = os.path.join(current_image_data["folder"], filename)
