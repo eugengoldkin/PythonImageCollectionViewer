@@ -681,6 +681,12 @@ def search_action():
     hide_all_dynamic_frames()
     search_container.pack(pady=20)
 
+
+def starting_action():
+    label = tk.Label(startup_container, text="Startup Frame", font=("Arial", 24), fg="white", bg=BG_COLOR)
+    label.pack(expand=True)
+    startup_container.pack()
+
 # =======================================
 #    Filtered Views of the collections
 # =======================================
@@ -768,7 +774,7 @@ def hide_all_dynamic_frames():
     detail_container.pack_forget()
     if image_container is not None:
         image_container.pack_forget()
-
+    startup_container.pack_forget()
 # Create an entry card for the main view   
 def create_entry_card(data, parent):
     """
@@ -915,7 +921,8 @@ def on_entry_click(data, starting_thumbnail=0):
     scroll_frame = tk.Frame(canvas, bg=BG_COLOR)
 
     scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    frame_id = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+    frame_id = canvas.create_window(((detail_container.winfo_width() - scroll_frame.winfo_width()) / 2, 0), 
+                                    window=scroll_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
 
     canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -1129,7 +1136,17 @@ def on_folder_clicked(folder_path):
 #        Image view of an entry
 # =======================================
 
+# Does preparation work for the fullscreen image view.
 def on_image_click(filename):
+    """
+    Does preparation work for the fullscreen image view. Then calls **show_fullscreen_image**.
+
+    Parameters:
+        filename (int): The index of the picture within it's corresponding collection.
+
+    Returns:
+        None: This function only prepares for the fullscreen image view.    
+    """
     global current_image_index, current_image_data
 
     if not current_image_data:
@@ -1186,17 +1203,30 @@ def show_fullscreen_image():
     def render_image(): 
         global current_fullscreen_photo 
         image_container.update_idletasks() 
-        w = image_container.winfo_width() 
-        h = image_container.winfo_height() 
+        container_w = image_container.winfo_width() 
+        container_h = image_container.winfo_height() 
         try:
             filename = current_image_data["files"][current_image_index]
             path = os.path.join(current_image_data["folder"], filename)
             img = Image.open(path)
-            img.thumbnail((w, h), resample=Image.Resampling.BICUBIC)
-            current_fullscreen_photo = ImageTk.PhotoImage(img)
+
+            img_ratio = img.width / img.height
+            container_ratio = container_w / container_h
+
+            if container_ratio > img_ratio:
+                # Fit to height
+                new_height = container_h
+                new_width = int(img_ratio * new_height)
+            else:
+                # Fit to width
+                new_width = container_w
+                new_height = int(new_width / img_ratio)
+
+            resized_img = img.resize((new_width, new_height), resample=Image.Resampling.BICUBIC)
+            current_fullscreen_photo = ImageTk.PhotoImage(resized_img)
 
             canvas.delete("all")
-            canvas.create_image(w // 2, h // 2, image=current_fullscreen_photo)
+            canvas.create_image(container_w // 2, container_h // 2, image=current_fullscreen_photo)
         except:
             pass
 
@@ -1307,6 +1337,11 @@ character_container.pack_forget()
 group_container = tk.Frame(root, bg=BG_COLOR)
 group_container.pack_forget()
 
+
+# === Group Grid ===
+startup_container = tk.Frame(root, bg=BG_COLOR)
+startup_container.pack_forget()
+
 # === Container for List View ===
 list_container = tk.Frame(root, bg=BG_COLOR)
 list_container.pack_forget()  # hidden by default
@@ -1320,5 +1355,9 @@ detail_container.pack_forget()  # hidden by default
 # === Container for Image View ===
 image_container = None
 
+# === Starting Frame View ===
+root.after(0, starting_action) 
+
 # Run the application
 root.mainloop()
+
