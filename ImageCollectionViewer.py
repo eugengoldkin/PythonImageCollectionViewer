@@ -52,6 +52,10 @@ def process_directories(start_dir):
                     data['genre'] = ["No Genre"]
                 if not data.get('group'):
                     data['group'] = ["No Group"]
+                if not data.get('series'):
+                    data['series'] = ["No Series"]
+                if not data.get('type'):
+                    data['type'] = ["No Type"]
 
                 # Update the dictionary with the list of image files and the count
                 data['size'] = size
@@ -88,33 +92,13 @@ def filter_by_genre(data, genres):
 def filter_by_character(data, characters):
     return [item for item in data if any(character in item['characters'] for character in characters)]
 
-# Function to create a sorted list of unique artists
-def get_sorted_artists(data):
-    artists = set()  # Use a set to remove duplicates
+# Function to create a sorted list of unique entities
+def get_sorted_entity(data, keyword):
+    entity_set = set()  # Use a set to remove duplicates
     for item in data:
-        artists.update(item["artists"])  # Add artists from each dictionary
-    return sorted(artists)  # Return a sorted list of unique artists
+        entity_set.update(item[keyword])  # Add entities from each dictionary
+    return sorted(entity_set)  # Return a sorted list of unique entities
 
-# Function to create a sorted list of unique groups
-def get_sorted_groups(data):
-    groups = set()  # Use a set to remove duplicates
-    for item in data:
-        groups.update(item["group"])  # Add groups from each dictionary
-    return sorted(groups)  # Return a sorted list of unique artists
-
-# Function to create a sorted list of unique genres
-def get_sorted_genres(data):
-    genres = set()  # Use a set to remove duplicates
-    for item in data:
-        genres.update(item["genre"])  # Add genres from each dictionary
-    return sorted(genres)  # Return a sorted list of unique genres
-
-# Function to create a sorted list of unique characters
-def get_sorted_characters(data):
-    characters = set()  # Use a set to remove duplicates
-    for item in data:
-        characters.update(item["characters"])  # Add characters from each dictionary
-    return sorted(characters)  # Return a sorted list of unique characters
 
 def split_sorted_list_to_dict(input_list):
     # Step 1: Sort the list alphabetically
@@ -136,32 +120,57 @@ def split_sorted_list_to_dict(input_list):
     return groups
 
 
+def count_occurrences(list_of_dict, list_of_entities, keyword):
+    entity_counts = {entity: 0 for entity in list_of_entities}
+    
+    for entry in list_of_dict:
+        for entity in entry.get(keyword, []):
+            if entity in entity_counts:
+                entity_counts[entity] += 1
+
+    return entity_counts
+
 # Start processing from the current directory
 myDict = sort_by_date_and_title(process_directories(current_directory))
 
-#print(myDict)
+list_of_artists = get_sorted_entity(myDict, "artists")
+list_of_characters = get_sorted_entity(myDict, "characters")
+list_of_genre = get_sorted_entity(myDict, "genre")
+list_of_groups = get_sorted_entity(myDict, "group")
 
-artists = {
-    "column1": ["Artist1", "Artist2", "Artist3"],
-    "column2": ["Artist4", "Artist5", "Artist6"],
-    "column3": ["Artist7", "Artist8"]
-}
-genre = {
-    "column1": ["Genre 01", "Genre 02", "Genre 03", "Genre 04", "Genre 05"],
-    "column2": ["Genre 06", "Genre 07", "Genre 08", "Genre 09", "Genre 10"],
-    "column3": ["Genre 11", "Genre 12", "Genre 13", "Genre 14"]
-}
-character = {
-    "column1": ["Character 01", "Character 02", "Character 03", "Character 04", "Character 05", "Character 06"],
-    "column2": ["Character 07", "Character 08", "Character 09", "Character 10", "Character 11", "Character 12"],
-    "column3": ["Character 13", "Character 14", "Character 15", "Character 16", "Character 17", "Character 18"]
-}
-group = {
-    "column1": ["Group 01", "Group 02", "Group 03", "Group 04", "Group 05", "Group 06", "Group 07"],
-    "column2": ["Group 08", "Group 09", "Group 10", "Group 11", "Group 12", "Group 13", "Group 14"],
-    "column3": ["Group 15", "Group 16", "Group 17", "Group 18", "Group 19", "Group 20", "Group 21"]
-}
+occurrences_of_artists = count_occurrences(myDict, list_of_artists, "artists")
+occurrences_of_characters = count_occurrences(myDict, list_of_characters, "characters")
+occurrences_of_genre = count_occurrences(myDict, list_of_genre, "genre")
+occurrences_of_groups = count_occurrences(myDict, list_of_groups, "group")
 
+artists = split_sorted_list_to_dict(list_of_artists)
+character = split_sorted_list_to_dict(list_of_characters)
+genre = split_sorted_list_to_dict(list_of_genre)
+group = split_sorted_list_to_dict(list_of_groups)
+
+
+# Generates general statistics
+def do_starting_stats():
+    """
+    Gathers general statistics about the collection and puts them into a dictionary
+
+    Returns:
+        dict: A key-value map containing the statistics
+    """
+    stats = {}
+    stats["Starting Folder"] = current_directory
+    stats["Number of Folders"] = len(myDict)
+    stats["Number of Artists"] = len(list_of_artists)
+    stats["Number of Characters"] = len(list_of_characters)
+    stats["Number of Genre"] = len(list_of_genre)
+    stats["Number of Group"] = len(list_of_groups)
+    pic_count = 0
+    for entry in myDict: 
+        pic_count += entry["size"]
+    stats["Number of Pictures"] = pic_count
+    return stats
+
+starting_statistics = do_starting_stats()
 
 # Globals
 image_refs = []
@@ -391,7 +400,7 @@ def genre_action():
         for item in genre.get(col_name, []):
             btn = tk.Button(
                 col_frame,
-                text=item,
+                text=item + "  (" + str(occurrences_of_genre[item]) + ")",
                 bg=BUTTON_BG,
                 fg=FG_COLOR,
                 activebackground=ACTIVE_BG,
@@ -476,7 +485,7 @@ def character_action():
         for item in character.get(col_name, []):
             btn = tk.Button(
                 col_frame,
-                text=item,
+                text=item + "  (" + str(occurrences_of_characters[item]) + ")",
                 bg=BUTTON_BG,
                 fg=FG_COLOR,
                 activebackground=ACTIVE_BG,
@@ -561,7 +570,7 @@ def group_action():
         for item in group.get(col_name, []):
             btn = tk.Button(
                 col_frame,
-                text=item,
+                text=item + "  (" + str(occurrences_of_groups[item]) + ")",
                 bg=BUTTON_BG,
                 fg=FG_COLOR,
                 activebackground=ACTIVE_BG,
@@ -646,7 +655,7 @@ def artist_action():
         for artist in artists.get(col_name, []):
             btn = tk.Button(
                 col_frame,
-                text=artist,
+                text=artist + "  (" + str(occurrences_of_artists[artist]) + ")",
                 bg=BUTTON_BG,
                 fg=FG_COLOR,
                 activebackground=ACTIVE_BG,
@@ -679,12 +688,167 @@ def artist_action():
 # Shows the Search View TODO: Improve the view with more options
 def search_action():
     hide_all_dynamic_frames()
+
+    for widget in search_container.winfo_children():
+        widget.destroy()
+
     search_container.pack(pady=20)
 
+    # --- Font Configs ---
+    CHECKBUTTON_FONT = ("Arial", 10)
+    SELECT_FONT = ("Arial", 14)
 
-def starting_action():
-    label = tk.Label(startup_container, text="Startup Frame", font=("Arial", 24), fg="white", bg=BG_COLOR)
-    label.pack(expand=True)
+    # --- Top Row: Search Entry + Button ---
+    top_row = tk.Frame(search_container, bg=BG_COLOR)
+    top_row.pack()
+
+    search_entry = tk.Entry(top_row, font=("Arial", 14), width=40, bg="#1E1E1E", fg=FG_COLOR,
+                            insertbackground=FG_COLOR, relief=tk.FLAT)
+    search_entry.pack(side=tk.LEFT, ipady=8, padx=(0, 10))
+
+    search_button = tk.Button(top_row, text="Search", bg=ACTIVE_BG, fg=FG_COLOR, font=("Arial", 14), relief=tk.FLAT,
+                              command=lambda: handle_search(search_entry.get()))
+    search_button.pack(side=tk.LEFT, padx=(0, 10))
+
+    # --- Helper Function to Create Dropdowns ---
+    def create_scrollable_checklist(parent_frame, label_text, item_list, var_dict):
+        wrapper = tk.Frame(parent_frame, bg=BG_COLOR)
+        wrapper.pack(side=tk.LEFT, padx=(0, 30))
+
+        label = tk.Label(wrapper, text=label_text, bg=BG_COLOR, fg=FG_COLOR, font=SELECT_FONT)
+        label.pack(anchor="w", pady=5)
+
+        container = tk.Frame(wrapper, bg=BG_COLOR, bd=1, relief=tk.SOLID)
+        container.pack()
+
+        canvas = tk.Canvas(container, height=150, bg="#2A2A2A", highlightthickness=0)
+        scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        list_frame = tk.Frame(canvas, bg="#2A2A2A")
+
+        list_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=list_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        for item in item_list:
+            var = tk.BooleanVar()
+            chk = tk.Checkbutton(list_frame, text=item, variable=var,
+                                 bg="#2A2A2A", fg=FG_COLOR, selectcolor=BG_COLOR,
+                                 activebackground="#2A2A2A", activeforeground=FG_COLOR,
+                                 font=CHECKBUTTON_FONT, anchor="w")
+            chk.pack(fill="x", padx=5, pady=0)
+            var_dict[item] = var
+
+    # --- Artist Dropdown Row ---
+    artist_row = tk.Frame(search_container, bg=BG_COLOR)
+    artist_row.pack(pady=(10, 0), fill="x")
+
+    include_artist_vars = {}
+    exclude_artist_vars = {}
+
+    create_scrollable_checklist(artist_row, "Must include at least one of the Artists:", list_of_artists, include_artist_vars)
+    create_scrollable_checklist(artist_row, "Must exclude all of the Artists:", list_of_artists, exclude_artist_vars)
+
+    # --- Genre Dropdown Row ---
+    genre_row = tk.Frame(search_container, bg=BG_COLOR)
+    genre_row.pack(pady=(10, 0), fill="x")
+
+    include_genre_vars = {}
+    exclude_genre_vars = {}
+
+    create_scrollable_checklist(genre_row, "Must include at least one of the Genres:", list_of_genre, include_genre_vars)
+    create_scrollable_checklist(genre_row, "Must exclude all of the Genres:", list_of_genre, exclude_genre_vars)
+
+    # --- Character Dropdown Row ---
+    character_row = tk.Frame(search_container, bg=BG_COLOR)
+    character_row.pack(pady=(10, 0), fill="x")
+
+    include_character_vars = {}
+    exclude_character_vars = {}
+
+    create_scrollable_checklist(character_row, "Must include at least one of the Characters:", list_of_characters, include_character_vars)
+    create_scrollable_checklist(character_row, "Must exclude all of the Characters:", list_of_characters, exclude_character_vars)
+
+    # --- Group Dropdown Row ---
+    group_row = tk.Frame(search_container, bg=BG_COLOR)
+    group_row.pack(pady=(10, 0), fill="x")
+
+    include_group_vars = {}
+    exclude_group_vars = {}
+
+    create_scrollable_checklist(group_row, "Must include at least one of the Groups:", list_of_groups, include_group_vars)
+    create_scrollable_checklist(group_row, "Must exclude all of the Groups:", list_of_groups, exclude_group_vars)
+
+    # --- Optional Helper Functions to Use Later ---
+    def get_selected_artists():
+        return [a for a, var in include_artist_vars.items() if var.get()]
+
+    def get_excluded_artists():
+        return [a for a, var in exclude_artist_vars.items() if var.get()]
+
+    def get_selected_genres():
+        return [g for g, var in include_genre_vars.items() if var.get()]
+
+    def get_excluded_genres():
+        return [g for g, var in exclude_genre_vars.items() if var.get()]
+
+    def get_selected_characters():
+        return [c for c, var in include_character_vars.items() if var.get()]
+
+    def get_excluded_characters():
+        return [c for c, var in exclude_character_vars.items() if var.get()]
+
+    def get_selected_groups():
+        return [g for g, var in include_group_vars.items() if var.get()]
+
+    def get_excluded_groups():
+        return [g for g, var in exclude_group_vars.items() if var.get()]
+
+    def getsearch_querry():
+        result = {}
+        result["Search Entry"] = search_entry.get()
+        result["Include Artist"] = [a for a, var in include_artist_vars.items() if var.get()]
+        result["Exclude Artist"] = [a for a, var in exclude_artist_vars.items() if var.get()]
+        result["Include Genre"] = [g for g, var in include_genre_vars.items() if var.get()]
+        result["Exclude Genre"] = [g for g, var in exclude_genre_vars.items() if var.get()]
+        result["Include Character"] = [c for c, var in include_character_vars.items() if var.get()]
+        result["Exclude Character"] = [c for c, var in exclude_character_vars.items() if var.get()]
+        result["Include Group"] = [g for g, var in include_group_vars.items() if var.get()]
+        result["Exclude Group"] = [g for g, var in exclude_group_vars.items() if var.get()]
+        return result
+    
+# Shows basic statistics in the view
+def starting_action(): 
+    """
+    Shows basic statistics for the start up page as table with the first column being the key and the second column being value.
+   
+    Returns:
+        None: This function only generates the start up view.
+    """
+    for widget in startup_container.winfo_children():
+        widget.destroy()
+
+    # Title label
+    label = tk.Label(startup_container, text="Startup Statistics", font=("Arial", 24), fg="white", bg=BG_COLOR)
+    label.pack(pady=20)
+
+    # Create a frame for the table
+    table_frame = tk.Frame(startup_container, bg=BG_COLOR)
+    table_frame.pack(pady=10)
+
+    # Fill table with data from starting_statistics
+    for i, (key, value) in enumerate(starting_statistics.items(), start=1):
+        key_label = tk.Label(table_frame, text=str(key), font=("Arial", 14), fg="white", bg=BG_COLOR)
+        val_label = tk.Label(table_frame, text=str(value), font=("Arial", 14), fg="white", bg=BG_COLOR)
+        key_label.grid(row=i, column=0, sticky="w", padx=20, pady=5)
+        val_label.grid(row=i, column=1, sticky="w", padx=20, pady=5)
+
     startup_container.pack()
 
 # =======================================
@@ -692,9 +856,8 @@ def starting_action():
 # =======================================
 
 # Does a search   TODO: Implement
-def handle_search():
-    query = search_entry.get()
-    print("Search query:", query)
+def handle_search(search_term):
+    print("Search query:", search_term)
 
 # Shows a list of all works of the artist
 def artist_clicked(artist_name):
@@ -775,6 +938,7 @@ def hide_all_dynamic_frames():
     if image_container is not None:
         image_container.pack_forget()
     startup_container.pack_forget()
+
 # Create an entry card for the main view   
 def create_entry_card(data, parent):
     """
@@ -1267,7 +1431,7 @@ def return_to_entry_view():
 # Create main window
 root = tk.Tk()
 root.title("Dark Mode GUI")
-root.geometry("1800x900")
+root.geometry("1800x950")
 root.configure(bg=BG_COLOR)
 
 # Create top menu bar as a frame
@@ -1294,8 +1458,8 @@ button_config = {
 menu_items = [
     ("Home", home_action),
     ("Artist", artist_action),
-    ("Genre", genre_action),
     ("Character", character_action),
+    ("Genre", genre_action),
     ("Group", group_action),
     ("Search", search_action),
 ]
@@ -1303,39 +1467,6 @@ menu_items = [
 for name, action in menu_items:
     btn = tk.Button(menu_inner, text=name, command=action, **button_config)
     btn.pack(side=tk.LEFT, pady=5)
-
-# === Search Bar ===
-
-search_container = tk.Frame(root, bg=BG_COLOR)
-
-search_entry = tk.Entry(search_container, font=("Arial", 14), width=40, bg="#1E1E1E", fg=FG_COLOR, 
-                        insertbackground=FG_COLOR, relief=tk.FLAT)
-search_entry.pack(side=tk.LEFT, ipady=8, padx=(0, 10))
-
-search_button = tk.Button(search_container, text="Search", command=handle_search,
-                          bg=ACTIVE_BG, fg=FG_COLOR, font=("Arial", 14), relief=tk.FLAT)
-search_button.pack(side=tk.LEFT)
-
-search_container.pack_forget()
-
-# === Artist Grid ===
-
-artist_container = tk.Frame(root, bg=BG_COLOR)
-artist_container.pack_forget()
-
-# === Genre Grid ===
-
-genre_container = tk.Frame(root, bg=BG_COLOR)
-genre_container.pack_forget()
-
-# === Character Grid ===
-
-character_container = tk.Frame(root, bg=BG_COLOR)
-character_container.pack_forget()
-
-# === Group Grid ===
-group_container = tk.Frame(root, bg=BG_COLOR)
-group_container.pack_forget()
 
 
 # === Group Grid ===
@@ -1347,6 +1478,27 @@ list_container = tk.Frame(root, bg=BG_COLOR)
 list_container.pack_forget()  # hidden by default
 for i in range(cards_per_row):
     list_container.grid_columnconfigure(i, weight=1)
+
+# === Artist Grid ===
+artist_container = tk.Frame(root, bg=BG_COLOR)
+artist_container.pack_forget()
+
+# === Character Grid ===
+character_container = tk.Frame(root, bg=BG_COLOR)
+character_container.pack_forget()
+
+# === Genre Grid ===
+genre_container = tk.Frame(root, bg=BG_COLOR)
+genre_container.pack_forget()
+
+# === Group Grid ===
+group_container = tk.Frame(root, bg=BG_COLOR)
+group_container.pack_forget()
+
+# === Search Bar ===
+search_container = tk.Frame(root, bg=BG_COLOR)
+search_container.pack_forget()
+
 
 # === Container for Detail View ===
 detail_container = tk.Frame(root, bg=BG_COLOR)
@@ -1360,4 +1512,3 @@ root.after(0, starting_action)
 
 # Run the application
 root.mainloop()
-
