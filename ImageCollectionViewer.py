@@ -80,17 +80,25 @@ def sort_by_date_and_title(data):
 def filter_by_artists(data, artists):
     return [item for item in data if any(artist in item['artists'] for artist in artists)]
 
-# Filter by groups
-def filter_by_group(data, groups):
-    return [item for item in data if any(group in item['group'] for group in groups)]
+# Filter by character
+def filter_by_character(data, characters):
+    return [item for item in data if any(character in item['characters'] for character in characters)]
 
 # Filter by genre
 def filter_by_genre(data, genres):
     return [item for item in data if any(genre in item['genre'] for genre in genres)]
 
-# Filter by character
-def filter_by_character(data, characters):
-    return [item for item in data if any(character in item['characters'] for character in characters)]
+# Filter by groups
+def filter_by_group(data, groups):
+    return [item for item in data if any(group in item['group'] for group in groups)]
+
+# Filter by series
+def filter_by_series(data, series):
+    return [item for item in data if any(serie in item['series'] for serie in series)]
+
+# Filter by types
+def filter_by_types(data, types):
+    return [item for item in data if any(type in item['type'] for type in types)]
 
 # Function to create a sorted list of unique entities
 def get_sorted_entity(data, keyword):
@@ -137,17 +145,22 @@ list_of_artists = get_sorted_entity(myDict, "artists")
 list_of_characters = get_sorted_entity(myDict, "characters")
 list_of_genre = get_sorted_entity(myDict, "genre")
 list_of_groups = get_sorted_entity(myDict, "group")
+list_of_series = get_sorted_entity(myDict, "series")
+list_of_types = get_sorted_entity(myDict, "type")
 
 occurrences_of_artists = count_occurrences(myDict, list_of_artists, "artists")
 occurrences_of_characters = count_occurrences(myDict, list_of_characters, "characters")
 occurrences_of_genre = count_occurrences(myDict, list_of_genre, "genre")
 occurrences_of_groups = count_occurrences(myDict, list_of_groups, "group")
+occurrences_of_series = count_occurrences(myDict, list_of_series, "series")
+occurrences_of_types = count_occurrences(myDict, list_of_types, "type")
 
 artists = split_sorted_list_to_dict(list_of_artists)
 character = split_sorted_list_to_dict(list_of_characters)
 genre = split_sorted_list_to_dict(list_of_genre)
 group = split_sorted_list_to_dict(list_of_groups)
-
+series = split_sorted_list_to_dict(list_of_series)
+types = split_sorted_list_to_dict(list_of_types)
 
 # Generates general statistics
 def do_starting_stats():
@@ -158,16 +171,18 @@ def do_starting_stats():
         dict: A key-value map containing the statistics
     """
     stats = {}
-    stats["Starting Folder"] = current_directory
-    stats["Number of Folders"] = len(myDict)
-    stats["Number of Artists"] = len(list_of_artists)
-    stats["Number of Characters"] = len(list_of_characters)
-    stats["Number of Genre"] = len(list_of_genre)
-    stats["Number of Group"] = len(list_of_groups)
+    stats["Starting Folder:"] = current_directory
+    stats["Number of Folders:"] = len(myDict)
+    stats["Number of Artists:"] = len(list_of_artists)
+    stats["Number of Characters:"] = len(list_of_characters)
+    stats["Number of Genre:"] = len(list_of_genre)
+    stats["Number of Groups:"] = len(list_of_groups)
+    stats["Number of Series:"] = len(list_of_series)
+    stats["Number of Types:"] = len(list_of_types)
     pic_count = 0
     for entry in myDict: 
         pic_count += entry["size"]
-    stats["Number of Pictures"] = pic_count
+    stats["Number of Pictures:"] = pic_count
     return stats
 
 starting_statistics = do_starting_stats()
@@ -345,90 +360,18 @@ def list_action(dictionary = myDict, iteration_start = 0):
     canvas.bind_all("<Up>", _on_arrow_key)
     canvas.bind_all("<Down>", _on_arrow_key)
 
-# Shows all Genre in three columns
-def genre_action():
+# Shows all Artists in three columns
+def artist_action():
     """
-    Shows all Genre in three columns. It uses the gloabal variable **genre**, which is a dictionary with 
-    the keys *column1*, *column2* and *column3* containing a third of the genre each. 
-    Clicking on one of the buttons will call the function **genre_clicked(name)** which in turn should 
-    show all entities of the specified genre.
+    Shows all artists in three columns. It uses the gloabal variable **artists**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the artists each. 
+    Clicking on one of the buttons will call the function **artist_clicked(name)** which in turn should 
+    show all entities of the specified artist.
 
     Returns:
         None: This function only generates a view.
     """
-    hide_all_dynamic_frames()
-
-    for widget in genre_container.winfo_children():
-        widget.destroy()
-
-    genre_container.pack(fill=tk.BOTH, expand=True)
-
-    # --- Scrollable Canvas Setup ---
-    canvas = tk.Canvas(genre_container, bg=BG_COLOR, highlightthickness=0)
-    scrollbar = tk.Scrollbar(genre_container, orient="vertical", command=canvas.yview)
-
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-    canvas.configure(yscrollcommand=scrollbar.set)
-
-    # Create frame inside canvas
-    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
-    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
-
-    # Resize canvas content to always match canvas width for centering
-    def resize_canvas(event):
-        canvas.itemconfig(window_id, width=event.width)
-
-    canvas.bind("<Configure>", resize_canvas)
-
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-    )
-
-    # --- Genre Inner Frame ---
-    genre_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
-    genre_inner.pack(pady=20)
-
-    # Use grid for three columns
-    columns = ["column1", "column2", "column3"]
-
-    for col_index, col_name in enumerate(columns):
-        col_frame = tk.Frame(genre_inner, bg=BG_COLOR)
-        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
-
-        for item in genre.get(col_name, []):
-            btn = tk.Button(
-                col_frame,
-                text=item + "  (" + str(occurrences_of_genre[item]) + ")",
-                bg=BUTTON_BG,
-                fg=FG_COLOR,
-                activebackground=ACTIVE_BG,
-                activeforeground=FG_COLOR,
-                relief=tk.FLAT,
-                font=("Arial", 12),
-                command=lambda name=item: genre_clicked(name),
-                cursor="hand2",
-                width=40
-            )
-            btn.pack(pady=5, anchor="w")
-
-    # --- Mousewheel + Keyboard Support ---
-    def _on_mousewheel(event):
-        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-    def _on_arrow_key(event):
-        if event.keysym == "Up":
-            canvas.yview_scroll(-1, "units")
-        elif event.keysym == "Down":
-            canvas.yview_scroll(1, "units")
-
-    canvas.bind_all("<MouseWheel>", _on_mousewheel)
-    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
-
-    canvas.bind_all("<Up>", _on_arrow_key)
-    canvas.bind_all("<Down>", _on_arrow_key)
+    choice_action(artist_container, artists, artist_clicked, occurrences_of_artists)
 
 # Shows all Characters in three columns
 def character_action():
@@ -441,84 +384,25 @@ def character_action():
     Returns:
         None: This function only generates a view.
     """
-    hide_all_dynamic_frames()
+    choice_action(character_container, character, character_clicked, occurrences_of_characters)
 
-    for widget in character_container.winfo_children():
-        widget.destroy()
+# Shows all Genre in three columns
+def genre_action():
+    """
+    Shows all Genre in three columns. It uses the gloabal variable **genre**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the genre each. 
+    Clicking on one of the buttons will call the function **genre_clicked(name)** which in turn should 
+    show all entities of the specified genre.
 
-    character_container.pack(fill=tk.BOTH, expand=True)
-
-    # --- Scrollable Canvas Setup ---
-    canvas = tk.Canvas(character_container, bg=BG_COLOR, highlightthickness=0)
-    scrollbar = tk.Scrollbar(character_container, orient="vertical", command=canvas.yview)
-
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-    canvas.configure(yscrollcommand=scrollbar.set)
-
-    # Create frame inside canvas
-    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
-    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
-
-    # Resize canvas content to always match canvas width for centering
-    def resize_canvas(event):
-        canvas.itemconfig(window_id, width=event.width)
-
-    canvas.bind("<Configure>", resize_canvas)
-
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-    )
-
-    # --- Character Inner Frame ---
-    character_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
-    character_inner.pack(pady=20)
-
-    # Use grid for three columns
-    columns = ["column1", "column2", "column3"]
-
-    for col_index, col_name in enumerate(columns):
-        col_frame = tk.Frame(character_inner, bg=BG_COLOR)
-        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
-
-        for item in character.get(col_name, []):
-            btn = tk.Button(
-                col_frame,
-                text=item + "  (" + str(occurrences_of_characters[item]) + ")",
-                bg=BUTTON_BG,
-                fg=FG_COLOR,
-                activebackground=ACTIVE_BG,
-                activeforeground=FG_COLOR,
-                relief=tk.FLAT,
-                font=("Arial", 12),
-                command=lambda name=item: character_clicked(name),
-                cursor="hand2",
-                width=40
-            )
-            btn.pack(pady=5, anchor="w")
-
-    # --- Mousewheel + Keyboard Support ---
-    def _on_mousewheel(event):
-        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-    def _on_arrow_key(event):
-        if event.keysym == "Up":
-            canvas.yview_scroll(-1, "units")
-        elif event.keysym == "Down":
-            canvas.yview_scroll(1, "units")
-
-    canvas.bind_all("<MouseWheel>", _on_mousewheel)
-    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
-
-    canvas.bind_all("<Up>", _on_arrow_key)
-    canvas.bind_all("<Down>", _on_arrow_key)
+    Returns:
+        None: This function only generates a view.
+    """
+    choice_action(genre_container, genre, genre_clicked, occurrences_of_genre)
 
 # Shows all Groups in three columns
 def group_action():
     """
-    Shows all group in three columns. It uses the gloabal variable **group**, which is a dictionary with 
+    Shows all group in three columns. It uses the global variable **group**, which is a dictionary with 
     the keys *column1*, *column2* and *column3* containing a third of the groups each. 
     Clicking on one of the buttons will call the function **group_clicked(name)** which in turn should 
     show all entities of the specified group.
@@ -526,101 +410,61 @@ def group_action():
     Returns:
         None: This function only generates a view.
     """
-    hide_all_dynamic_frames()
+    choice_action(group_container, group, group_clicked, occurrences_of_groups)
 
-    for widget in group_container.winfo_children():
-        widget.destroy()
-
-    group_container.pack(fill=tk.BOTH, expand=True)
-
-    # --- Scrollable Canvas Setup ---
-    canvas = tk.Canvas(group_container, bg=BG_COLOR, highlightthickness=0)
-    scrollbar = tk.Scrollbar(group_container, orient="vertical", command=canvas.yview)
-
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-    canvas.configure(yscrollcommand=scrollbar.set)
-
-    # Create frame inside canvas
-    scrollable_frame = tk.Frame(canvas, bg=BG_COLOR)
-    window_id = canvas.create_window((0, 0), window=scrollable_frame, anchor="n")
-
-    # Resize canvas content to always match canvas width for centering
-    def resize_canvas(event):
-        canvas.itemconfig(window_id, width=event.width)
-
-    canvas.bind("<Configure>", resize_canvas)
-
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-    )
-
-    # --- Group Inner Frame ---
-    group_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
-    group_inner.pack(pady=20)
-
-    # Use grid for three columns
-    columns = ["column1", "column2", "column3"]
-
-    for col_index, col_name in enumerate(columns):
-        col_frame = tk.Frame(group_inner, bg=BG_COLOR)
-        col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
-
-        for item in group.get(col_name, []):
-            btn = tk.Button(
-                col_frame,
-                text=item + "  (" + str(occurrences_of_groups[item]) + ")",
-                bg=BUTTON_BG,
-                fg=FG_COLOR,
-                activebackground=ACTIVE_BG,
-                activeforeground=FG_COLOR,
-                relief=tk.FLAT,
-                font=("Arial", 12),
-                command=lambda name=item: group_clicked(name),
-                cursor="hand2",
-                width=40
-            )
-            btn.pack(pady=5, anchor="w")
-
-    # --- Mousewheel + Keyboard Support ---
-    def _on_mousewheel(event):
-        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-    def _on_arrow_key(event):
-        if event.keysym == "Up":
-            canvas.yview_scroll(-1, "units")
-        elif event.keysym == "Down":
-            canvas.yview_scroll(1, "units")
-
-    canvas.bind_all("<MouseWheel>", _on_mousewheel)
-    canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
-    canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
-
-    canvas.bind_all("<Up>", _on_arrow_key)
-    canvas.bind_all("<Down>", _on_arrow_key)
-
-# Shows all Artists in three columns
-def artist_action():
+# Shows all Series in three columns
+def series_action():
     """
-    Shows all artists in three columns. It uses the gloabal variable **artists**, which is a dictionary with 
-    the keys *column1*, *column2* and *column3* containing a third of the artists each. 
-    Clicking on one of the buttons will call the function **artist_clicked(name)** which in turn should 
-    show all entities of the specified artist.
+    Shows all series in three columns. It uses the global variable **series**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the series each. 
+    Clicking on one of the buttons will call the function **series_clicked(name)** which in turn should 
+    show all entities of the specified series.
+
+    Returns:
+        None: This function only generates a view.
+    """
+    choice_action(series_container, series, series_clicked, occurrences_of_series)
+
+# Shows all Types in three columns
+def types_action():
+    """
+    Shows all types in three columns. It uses the global variable **types**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the types each. 
+    Clicking on one of the buttons will call the function **type_clicked(name)** which in turn should 
+    show all entities of the specified types.
+
+    Returns:
+        None: This function only generates a view.
+    """
+    choice_action(types_container, types, type_clicked, occurrences_of_types)
+
+# Shows all Entities in three columns
+def choice_action(entity_container, entity_dict, entity_clicked, occurrences_of_entities):
+    """
+    Shows all entities in three columns. It uses the variable **entity_dict**, which is a dictionary with 
+    the keys *column1*, *column2* and *column3* containing a third of the entities each. 
+    Clicking on one of the buttons will call the function **entity_clicked(name)** which in turn should 
+    show all entities of the specified filtering.
+
+    Parameters:
+        entity_container (tk.Frame): The view container which will be shown
+        entity_dict (dict): A dictionary which holds three columns *column1*, *column2* and *column3* with strings
+        entity_clicked (func): A function which takes a string as an input, filters the collection and shows the result in a frame
+        occurrences_of_entities (dict): Maps the string to its' corresponding occurence
 
     Returns:
         None: This function only generates a view.
     """
     hide_all_dynamic_frames()
 
-    for widget in artist_container.winfo_children():
+    for widget in entity_container.winfo_children():
         widget.destroy()
 
-    artist_container.pack(fill=tk.BOTH, expand=True)
+    entity_container.pack(fill=tk.BOTH, expand=True)
 
     # --- Scrollable Canvas Setup ---
-    canvas = tk.Canvas(artist_container, bg=BG_COLOR, highlightthickness=0)
-    scrollbar = tk.Scrollbar(artist_container, orient="vertical", command=canvas.yview)
+    canvas = tk.Canvas(entity_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(entity_container, orient="vertical", command=canvas.yview)
 
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
@@ -641,28 +485,28 @@ def artist_action():
         lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
     )
 
-    # --- Artist Inner Frame ---
-    artist_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
-    artist_inner.pack(pady=20)
+    # --- Entity Inner Frame ---
+    entity_inner = tk.Frame(scrollable_frame, bg=BG_COLOR)
+    entity_inner.pack(pady=20)
 
     # Use grid for three columns
     columns = ["column1", "column2", "column3"]
 
     for col_index, col_name in enumerate(columns):
-        col_frame = tk.Frame(artist_inner, bg=BG_COLOR)
+        col_frame = tk.Frame(entity_inner, bg=BG_COLOR)
         col_frame.grid(row=0, column=col_index, padx=20, sticky="n")
 
-        for artist in artists.get(col_name, []):
+        for item in entity_dict.get(col_name, []):
             btn = tk.Button(
                 col_frame,
-                text=artist + "  (" + str(occurrences_of_artists[artist]) + ")",
+                text=item + "  (" + str(occurrences_of_entities[item]) + ")",
                 bg=BUTTON_BG,
                 fg=FG_COLOR,
                 activebackground=ACTIVE_BG,
                 activeforeground=FG_COLOR,
                 relief=tk.FLAT,
                 font=("Arial", 12),
-                command=lambda name=artist: artist_clicked(name),
+                command=lambda name=item: entity_clicked(name),
                 cursor="hand2",
                 width=40
             )
@@ -692,14 +536,57 @@ def search_action():
     for widget in search_container.winfo_children():
         widget.destroy()
 
-    search_container.pack(pady=20)
+    search_container.pack(fill="both", expand=True, pady=20)
+
+    # --- Scrollable Canvas ---
+    canvas = tk.Canvas(search_container, bg=BG_COLOR, highlightthickness=0)
+    scrollbar = tk.Scrollbar(search_container, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    # --- Inner Frame inside Canvas ---
+    search_inner_frame = tk.Frame(canvas, bg=BG_COLOR)
+    window_id = canvas.create_window((0, 0), window=search_inner_frame, anchor="n")
+
+
+    # Resize canvas content to always match canvas width for centering
+    def resize_canvas(event):
+        canvas.itemconfig(window_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+
+    search_inner_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+
+    # Make the canvas scrollable when resized
+    def on_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+    search_inner_frame.bind("<Configure>", on_configure)
+
+    def _on_mousewheel(event):
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_arrow_key(event):
+        if event.keysym == "Up":
+            canvas.yview_scroll(-1, "units")
+        elif event.keysym == "Down":
+            canvas.yview_scroll(1, "units")
+
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)
+    canvas.bind_all("<Up>", _on_arrow_key)
+    canvas.bind_all("<Down>", _on_arrow_key)
 
     # --- Font Configs ---
     CHECKBUTTON_FONT = ("Arial", 10)
-    SELECT_FONT = ("Arial", 14)
+    SELECT_FONT = ("Arial", 14, "bold")
 
     # --- Top Row: Search Entry + Button ---
-    top_row = tk.Frame(search_container, bg=BG_COLOR)
+    top_row = tk.Frame(search_inner_frame, bg=BG_COLOR, padx=200)
     top_row.pack()
 
     search_entry = tk.Entry(top_row, font=("Arial", 14), width=40, bg="#1E1E1E", fg=FG_COLOR,
@@ -707,13 +594,13 @@ def search_action():
     search_entry.pack(side=tk.LEFT, ipady=8, padx=(0, 10))
 
     search_button = tk.Button(top_row, text="Search", bg=ACTIVE_BG, fg=FG_COLOR, font=("Arial", 14), relief=tk.FLAT,
-                              command=lambda: handle_search(search_entry.get()))
+                              command=lambda: handle_search(getsearch_querry()))
     search_button.pack(side=tk.LEFT, padx=(0, 10))
 
     # --- Helper Function to Create Dropdowns ---
     def create_scrollable_checklist(parent_frame, label_text, item_list, var_dict):
         wrapper = tk.Frame(parent_frame, bg=BG_COLOR)
-        wrapper.pack(side=tk.LEFT, padx=(0, 30))
+        wrapper.pack(side=tk.LEFT, padx=(0, 40))
 
         label = tk.Label(wrapper, text=label_text, bg=BG_COLOR, fg=FG_COLOR, font=SELECT_FONT)
         label.pack(anchor="w", pady=5)
@@ -746,8 +633,8 @@ def search_action():
             var_dict[item] = var
 
     # --- Artist Dropdown Row ---
-    artist_row = tk.Frame(search_container, bg=BG_COLOR)
-    artist_row.pack(pady=(10, 0), fill="x")
+    artist_row = tk.Frame(search_inner_frame, bg=BG_COLOR)
+    artist_row.pack(pady=(15, 0))
 
     include_artist_vars = {}
     exclude_artist_vars = {}
@@ -756,8 +643,8 @@ def search_action():
     create_scrollable_checklist(artist_row, "Must exclude all of the Artists:", list_of_artists, exclude_artist_vars)
 
     # --- Genre Dropdown Row ---
-    genre_row = tk.Frame(search_container, bg=BG_COLOR)
-    genre_row.pack(pady=(10, 0), fill="x")
+    genre_row = tk.Frame(search_inner_frame, bg=BG_COLOR)
+    genre_row.pack(pady=(15, 0))
 
     include_genre_vars = {}
     exclude_genre_vars = {}
@@ -766,8 +653,8 @@ def search_action():
     create_scrollable_checklist(genre_row, "Must exclude all of the Genres:", list_of_genre, exclude_genre_vars)
 
     # --- Character Dropdown Row ---
-    character_row = tk.Frame(search_container, bg=BG_COLOR)
-    character_row.pack(pady=(10, 0), fill="x")
+    character_row = tk.Frame(search_inner_frame, bg=BG_COLOR)
+    character_row.pack(pady=(15, 0))
 
     include_character_vars = {}
     exclude_character_vars = {}
@@ -776,8 +663,8 @@ def search_action():
     create_scrollable_checklist(character_row, "Must exclude all of the Characters:", list_of_characters, exclude_character_vars)
 
     # --- Group Dropdown Row ---
-    group_row = tk.Frame(search_container, bg=BG_COLOR)
-    group_row.pack(pady=(10, 0), fill="x")
+    group_row = tk.Frame(search_inner_frame, bg=BG_COLOR)
+    group_row.pack(pady=(15, 0))
 
     include_group_vars = {}
     exclude_group_vars = {}
@@ -785,31 +672,7 @@ def search_action():
     create_scrollable_checklist(group_row, "Must include at least one of the Groups:", list_of_groups, include_group_vars)
     create_scrollable_checklist(group_row, "Must exclude all of the Groups:", list_of_groups, exclude_group_vars)
 
-    # --- Optional Helper Functions to Use Later ---
-    def get_selected_artists():
-        return [a for a, var in include_artist_vars.items() if var.get()]
-
-    def get_excluded_artists():
-        return [a for a, var in exclude_artist_vars.items() if var.get()]
-
-    def get_selected_genres():
-        return [g for g, var in include_genre_vars.items() if var.get()]
-
-    def get_excluded_genres():
-        return [g for g, var in exclude_genre_vars.items() if var.get()]
-
-    def get_selected_characters():
-        return [c for c, var in include_character_vars.items() if var.get()]
-
-    def get_excluded_characters():
-        return [c for c, var in exclude_character_vars.items() if var.get()]
-
-    def get_selected_groups():
-        return [g for g, var in include_group_vars.items() if var.get()]
-
-    def get_excluded_groups():
-        return [g for g, var in exclude_group_vars.items() if var.get()]
-
+    # --- Helper Function ---
     def getsearch_querry():
         result = {}
         result["Search Entry"] = search_entry.get()
@@ -919,6 +782,36 @@ def group_clicked(group_name):
     """
     list_action(filter_by_group(myDict, [group_name]))
 
+# Shows a list of all works of the series
+def series_clicked(series_name):
+    """
+    Shows a list of all works with the series in a grid with up to 30 elements.
+    The list **myDict** is filtered for **series_name** and then the function 
+    **list_action(dict)** is called with the filtered list as input.
+
+    Parameters:
+        series_name (str): The name of the series for which the picture collections have to be filtered for.
+   
+    Returns:
+        None: This function only generates a view.
+    """
+    list_action(filter_by_series(myDict, [series_name]))
+
+# Shows a list of all works of the type
+def type_clicked(type_name):
+    """
+    Shows a list of all works with the type in a grid with up to 30 elements.
+    The list **myDict** is filtered for **type_name** and then the function 
+    **list_action(dict)** is called with the filtered list as input.
+
+    Parameters:
+        type_name (str): The name of the type for which the picture collections have to be filtered for.
+   
+    Returns:
+        None: This function only generates a view.
+    """
+    list_action(filter_by_types(myDict, [type_name]))
+
 # =======================================
 #      Help functions for main views
 # =======================================
@@ -934,6 +827,8 @@ def hide_all_dynamic_frames():
     character_container.pack_forget()
     group_container.pack_forget()
     list_container.pack_forget()
+    series_container.pack_forget()
+    types_container.pack_forget()
     detail_container.pack_forget()
     if image_container is not None:
         image_container.pack_forget()
@@ -1461,6 +1356,8 @@ menu_items = [
     ("Character", character_action),
     ("Genre", genre_action),
     ("Group", group_action),
+    ("Series", series_action),
+    ("Types", types_action),
     ("Search", search_action),
 ]
 
@@ -1495,10 +1392,17 @@ genre_container.pack_forget()
 group_container = tk.Frame(root, bg=BG_COLOR)
 group_container.pack_forget()
 
+# === Series Grid ===
+series_container = tk.Frame(root, bg=BG_COLOR)
+series_container.pack_forget()
+
+# === Types Grid ===
+types_container = tk.Frame(root, bg=BG_COLOR)
+types_container.pack_forget()
+
 # === Search Bar ===
 search_container = tk.Frame(root, bg=BG_COLOR)
 search_container.pack_forget()
-
 
 # === Container for Detail View ===
 detail_container = tk.Frame(root, bg=BG_COLOR)
