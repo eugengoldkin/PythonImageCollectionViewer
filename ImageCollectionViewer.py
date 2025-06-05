@@ -5,7 +5,6 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import Menu
 from PIL import Image, ImageTk
-import os
 import platform
 import subprocess
 
@@ -529,7 +528,7 @@ def choice_action(entity_container, entity_dict, entity_clicked, occurrences_of_
     canvas.bind_all("<Up>", _on_arrow_key)
     canvas.bind_all("<Down>", _on_arrow_key)
 
-# Shows the Search View TODO: Improve the view with more options
+# Shows the Search View
 def search_action():
     hide_all_dynamic_frames()
 
@@ -600,7 +599,7 @@ def search_action():
     # --- Helper Function to Create Dropdowns ---
     def create_scrollable_checklist(parent_frame, label_text, item_list, var_dict):
         wrapper = tk.Frame(parent_frame, bg=BG_COLOR)
-        wrapper.pack(side=tk.LEFT, padx=(0, 40))
+        wrapper.pack(side=tk.LEFT, padx=(0, 50))
 
         label = tk.Label(wrapper, text=label_text, bg=BG_COLOR, fg=FG_COLOR, font=SELECT_FONT)
         label.pack(anchor="w", pady=5)
@@ -608,14 +607,11 @@ def search_action():
         container = tk.Frame(wrapper, bg=BG_COLOR, bd=1, relief=tk.SOLID)
         container.pack()
 
-        canvas = tk.Canvas(container, height=150, bg="#2A2A2A", highlightthickness=0)
+        canvas = tk.Canvas(container, height=150, width=400, bg="#2A2A2A", highlightthickness=0)
         scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
         list_frame = tk.Frame(canvas, bg="#2A2A2A")
 
-        list_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+        list_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
         canvas.create_window((0, 0), window=list_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
@@ -672,6 +668,26 @@ def search_action():
     create_scrollable_checklist(group_row, "Must include at least one of the Groups:", list_of_groups, include_group_vars)
     create_scrollable_checklist(group_row, "Must exclude all of the Groups:", list_of_groups, exclude_group_vars)
 
+    # --- Series Dropdown Row ---
+    series_row = tk.Frame(search_inner_frame, bg=BG_COLOR)
+    series_row.pack(pady=(15, 0))
+
+    include_series_vars = {}
+    exclude_series_vars = {}
+
+    create_scrollable_checklist(series_row, "Must include at least one of the Series:", list_of_series, include_series_vars)
+    create_scrollable_checklist(series_row, "Must exclude all of the Series:", list_of_series, exclude_series_vars)
+
+    # --- Type Dropdown Row ---
+    type_row = tk.Frame(search_inner_frame, bg=BG_COLOR)
+    type_row.pack(pady=(15, 0))
+
+    include_type_vars = {}
+    exclude_type_vars = {}
+
+    create_scrollable_checklist(type_row, "Must include at least one of the Types:", list_of_types, include_type_vars)
+    create_scrollable_checklist(type_row, "Must exclude all of the Types:", list_of_types, exclude_type_vars)
+
     # --- Helper Function ---
     def getsearch_querry():
         result = {}
@@ -684,6 +700,10 @@ def search_action():
         result["Exclude Character"] = [c for c, var in exclude_character_vars.items() if var.get()]
         result["Include Group"] = [g for g, var in include_group_vars.items() if var.get()]
         result["Exclude Group"] = [g for g, var in exclude_group_vars.items() if var.get()]
+        result["Include Series"] = [g for g, var in include_series_vars.items() if var.get()]
+        result["Exclude Series"] = [g for g, var in exclude_series_vars.items() if var.get()]
+        result["Include Types"] = [g for g, var in include_type_vars.items() if var.get()]
+        result["Exclude Types"] = [g for g, var in exclude_type_vars.items() if var.get()]
         return result
     
 # Shows basic statistics in the view
@@ -718,9 +738,37 @@ def starting_action():
 #    Filtered Views of the collections
 # =======================================
 
-# Does a search   TODO: Implement
-def handle_search(search_term):
-    print("Search query:", search_term)
+# Does a search
+def handle_search(search_dict):
+
+    def filter_by_entities(data, entities, data_key):
+        if len(entities) > 0:
+            return [item for item in data if any(entity in item[data_key] for entity in entities)]
+        return data
+
+    def filter_out_by_entities(data, entities, data_key):
+        if len(entities) > 0:
+            return [item for item in data if all(entity not in item[data_key] for entity in entities)]
+        return data
+
+    def filter_title(data):
+        if search_dict["Search Entry"].strip() != '':
+            return [item for item in data if search_dict["Search Entry"] in item.get('title', '')]
+        return data
+    
+    data_0 = filter_by_entities(myDict, search_dict["Include Artist"], 'artists')
+    data_1 = filter_by_entities(data_0, search_dict["Include Character"], 'characters')
+    data_2 = filter_by_entities(data_1, search_dict["Include Genre"], 'genre')
+    data_3 = filter_by_entities(data_2, search_dict["Include Group"], 'group')
+    data_4 = filter_by_entities(data_3, search_dict["Include Series"], 'series')
+    data_5 = filter_by_entities(data_4, search_dict["Include Types"], 'type')
+    data_6 =  filter_out_by_entities(data_5,  search_dict["Exclude Artist"], 'artists')
+    data_7 =  filter_out_by_entities(data_6,  search_dict["Exclude Character"], 'characters')
+    data_8 =  filter_out_by_entities(data_7,  search_dict["Exclude Genre"], 'genre')
+    data_9 =  filter_out_by_entities(data_8,  search_dict["Exclude Group"], 'group')
+    data_10 = filter_out_by_entities(data_9,  search_dict["Exclude Series"], 'series')
+    data_11 = filter_out_by_entities(data_10, search_dict["Exclude Types"], 'type')
+    list_action(dictionary = filter_title(data_11))
 
 # Shows a list of all works of the artist
 def artist_clicked(artist_name):
@@ -977,25 +1025,20 @@ def on_entry_click(data, starting_thumbnail=0):
     # Create scrollable canvas inside detail_container
     canvas = tk.Canvas(detail_container, bg=BG_COLOR, highlightthickness=0)
     scrollbar = tk.Scrollbar(detail_container, orient="vertical", command=canvas.yview)
-    scroll_frame = tk.Frame(canvas, bg=BG_COLOR)
-
-    scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    frame_id = canvas.create_window(((detail_container.winfo_width() - scroll_frame.winfo_width()) / 2, 0), 
-                                    window=scroll_frame, anchor="nw")
     canvas.configure(yscrollcommand=scrollbar.set)
 
     canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
     scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    
-    # This makes sure that everything is centered
-    def on_canvas_resize(event=None):
-        x = (detail_container.winfo_width() - scroll_frame.winfo_width()) / 2
-        canvas.coords(frame_id, (x, 0))
-        bbox = (0, 0, detail_container.winfo_width(), scroll_frame.winfo_height())
-        canvas.config(scrollregion=bbox)
-    canvas.bind("<Configure>", on_canvas_resize)
-    canvas.bind("<Enter>", on_canvas_resize)
 
+    scroll_frame = tk.Frame(canvas, bg=BG_COLOR)
+    frame_id = canvas.create_window((0, 0), window=scroll_frame, anchor="n")
+    
+    def resize_canvas(event):
+        canvas.itemconfig(frame_id, width=event.width)
+
+    canvas.bind("<Configure>", resize_canvas)
+    scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    
     # This allows you to scroll with the Mousewheel
     def _on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -1004,8 +1047,8 @@ def on_entry_click(data, starting_thumbnail=0):
     canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
     
     # Main box
-    main_box = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=20, pady=20, width=1000, height=320)
-    main_box.pack(pady=10, padx=10, fill=tk.X)
+    main_box = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=7, pady=20, width=1300, height=320)
+    main_box.pack(pady=10, padx=10)
     main_box.grid_propagate(False)
     main_box.pack_propagate(False)
 
@@ -1032,69 +1075,60 @@ def on_entry_click(data, starting_thumbnail=0):
     tk.Label(info_frame, text=data["title"], font=("Arial", 18, "bold"),
              fg=FG_COLOR, bg=ACTIVE_BG).pack(anchor="w", pady=2)
 
+    def generate_tags(type_key, entity_frame, entity_fg_color, entity_font, entity_bg_color, entity_clicked, two_line_split=8):
+        for i, entity in enumerate(data[type_key][0:min(two_line_split, len(data[type_key]))], start=0):
+            entity_text = entity
+            if i < len(data[type_key]) - 1:
+                entity_text += ","
+            entity_lbl = tk.Label(entity_frame, text=entity_text, fg=entity_fg_color, 
+                                font=entity_font, bg=entity_bg_color, cursor="hand2")
+            entity_lbl.pack(side=tk.LEFT)
+            entity_lbl.bind("<Button-1>", lambda e, name=entity: entity_clicked(name))
+
+        if len(data[type_key]) > two_line_split:
+            entity_frame2 = tk.Frame(info_frame, bg=ACTIVE_BG)
+            entity_frame2.pack(anchor="w")      
+            for i, entity in enumerate(data[type_key][two_line_split:len(data[type_key])], start=two_line_split):
+                entity_text = entity
+                if i < len(data[type_key]) - 1:
+                    entity_text += ","
+                entity_lbl = tk.Label(entity_frame2, text=entity_text, fg=entity_fg_color, 
+                                font=entity_font, bg=entity_bg_color, cursor="hand2")
+                entity_lbl.pack(side=tk.LEFT)
+                entity_lbl.bind("<Button-1>", lambda e, name=entity: entity_clicked(name))
+
+
     artist_frame = tk.Frame(info_frame, bg=ACTIVE_BG)
     artist_frame.pack(anchor="w")
-    for i, artist in enumerate(data["artists"]):
-        artist_text = artist
-        if i < len(data["artists"]) - 1:
-            artist_text += ","
-        artist_lbl = tk.Label(artist_frame, text=artist_text, fg=ENTRY_ARTIST_COLOR, 
-                              font=ENTRY_ARTIST_FONT, bg=ENTRY_ARTIST_BG_COLOR, cursor="hand2")
-        artist_lbl.pack(side=tk.LEFT)
-        artist_lbl.bind("<Button-1>", lambda e, name=artist: artist_clicked(name))
+    generate_tags("artists", artist_frame, ENTRY_ARTIST_COLOR, ENTRY_ARTIST_FONT, ENTRY_ARTIST_BG_COLOR, artist_clicked)
 
-    size_lbl = tk.Label(info_frame, text="Size: " + str(data["size"]), fg=ENTRY_SIZE_COLOR, 
-                        bg=ENTRY_SIZE_BG_COLOR, font=ENTRY_SIZE_FONT, anchor="w")
-    size_lbl.pack(anchor="w")
+    tk.Label(info_frame, text="Size: " + str(data["size"]), fg=ENTRY_SIZE_COLOR, 
+             bg=ENTRY_SIZE_BG_COLOR, font=ENTRY_SIZE_FONT, anchor="w").pack(anchor="w")
 
     group_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     group_frame1.pack(anchor="w")
     tk.Label(group_frame1, text="Group: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
-    for i, group in enumerate(data["group"]):
-        group_text = group
-        if i < len(data["group"]) - 1:
-            group_text += ","
-        group_lbl = tk.Label(group_frame1, text=group_text, fg=ENTRY_COLOR,
-                             font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
-        group_lbl.pack(side=tk.LEFT)
-        group_lbl.bind("<Button-1>", lambda e, name=group: group_clicked(name))
+    generate_tags("group", group_frame1, ENTRY_COLOR, ENTRY_FONT, ENTRY_BG_COLOR, group_clicked)
+
+    series_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    series_frame1.pack(anchor="w")
+    tk.Label(series_frame1, text="Series: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
+    generate_tags("series", series_frame1, ENTRY_COLOR, ENTRY_FONT, ENTRY_BG_COLOR, series_clicked)
+
+    type_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
+    type_frame1.pack(anchor="w")
+    tk.Label(type_frame1, text="Type: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
+    generate_tags("type", type_frame1, ENTRY_COLOR, ENTRY_FONT, ENTRY_BG_COLOR, type_clicked)
 
     character_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     character_frame1.pack(anchor="w")
     tk.Label(character_frame1, text="Characters: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
-    for i, character in enumerate(data["characters"]):
-        character_text = character
-        if i < len(data["characters"]) - 1:
-            character_text += ","
-        character_lbl = tk.Label(character_frame1, text=character_text, fg=ENTRY_COLOR,
-                             font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
-        character_lbl.pack(side=tk.LEFT)
-        character_lbl.bind("<Button-1>", lambda e, name=character: character_clicked(name))
+    generate_tags("characters", character_frame1, ENTRY_COLOR, ENTRY_FONT, ENTRY_BG_COLOR, character_clicked)
 
-    two_line_split = 10
     genre_frame1 = tk.Frame(info_frame, bg=ACTIVE_BG)
     genre_frame1.pack(anchor="w")
     tk.Label(genre_frame1, text="Genre: ", fg=ENTRY_COLOR, bg=ACTIVE_BG, font=ENTRY_FONT).pack(side=tk.LEFT)
-    for i, genre in enumerate(data["genre"][0:min(two_line_split, len(data["genre"]))], start=0):
-        genre_text = genre
-        if i < len(data["genre"]) - 1:
-            genre_text += ","
-        genre_lbl = tk.Label(genre_frame1, text=genre_text, fg=ENTRY_COLOR, 
-                             font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
-        genre_lbl.pack(side=tk.LEFT)
-        genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
-
-    if len(data["genre"]) > two_line_split:
-        genre_frame2 = tk.Frame(info_frame, bg=ACTIVE_BG)
-        genre_frame2.pack(anchor="w")      
-        for i, genre in enumerate(data["genre"][two_line_split:len(data["genre"])], start=two_line_split):
-            genre_text = genre
-            if i < len(data["genre"]) - 1:
-                genre_text += ","
-            genre_lbl = tk.Label(genre_frame2, text=genre_text, fg=ENTRY_COLOR, 
-                                font=ENTRY_FONT, bg=ENTRY_BG_COLOR, cursor="hand2")
-            genre_lbl.pack(side=tk.LEFT)
-            genre_lbl.bind("<Button-1>", lambda e, name=genre: genre_clicked(name))
+    generate_tags("genre", genre_frame1, ENTRY_COLOR, ENTRY_FONT, ENTRY_BG_COLOR, genre_clicked, two_line_split = 10)
 
     folder_lbl = tk.Label(info_frame, text="Folder: " + data["folder"], font=ENTRY_FONT, fg=FG_COLOR, bg=ACTIVE_BG, cursor="hand2")
     folder_lbl.pack(anchor="w", pady=2)
@@ -1107,8 +1141,8 @@ def on_entry_click(data, starting_thumbnail=0):
 
     # Buttons for thumbnails
 
-    button_frame = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=7, pady=7, width=200, height=30)
-    button_frame.pack(pady=0, padx=10, fill=tk.X)
+    button_frame = tk.Frame(scroll_frame, bg=ACTIVE_BG, padx=7, pady=7, width=800, height=30)
+    button_frame.pack(pady=0, padx=10)
 
     # shows the previous 32 elements
     button_left = tk.Button(
@@ -1124,7 +1158,6 @@ def on_entry_click(data, starting_thumbnail=0):
                 cursor="hand2",
                 width=20
             )
-    #button_left.grid(row=0,column=0)
     button_left.pack(anchor="n", side=tk.LEFT)
 
     # shows which elements are currenty visible in the grid
@@ -1147,9 +1180,7 @@ def on_entry_click(data, starting_thumbnail=0):
                 cursor="hand2",
                 width=20
             )
-    #button_right.grid(row=0,column=2)
     button_right.pack(anchor="n", side=tk.RIGHT)
-
 
     # Mini thumbnails
     thumbs_frame = tk.Frame(scroll_frame, bg=BG_COLOR)
@@ -1169,8 +1200,6 @@ def on_entry_click(data, starting_thumbnail=0):
             lbl.bind("<Button-1>", lambda e, f=file: on_image_click(f))
         except Exception as e:
             print(f"Thumb load error for {file}: {e}")
-
-    on_canvas_resize()
 
 # Open folder of folder_path 
 def on_folder_clicked(folder_path):
